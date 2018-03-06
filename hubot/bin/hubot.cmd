@@ -25,7 +25,7 @@ SET HUBOT_ALTERDESK_PM_PREFIX=0
 REM Hubot debug log level
 SET HUBOT_LOG_LEVEL=debug
 
-if ""%HUBOT_ALTERDESK_TOKEN%"=="" (
+if "%HUBOT_ALTERDESK_TOKEN%"=="" (
     node_modules\.bin\hubot.cmd --name "alterdeskbot" %*
 ) else (
     node_modules\.bin\hubot.cmd --name "alterdeskbot" --adapter "alterdesk" %*
