@@ -8,14 +8,17 @@ npm install ../alterdesk-example-script
 export PATH="node_modules/.bin:node_modules/hubot/node_modules/.bin:$PATH"
 
 # Set your OAuth 2.0 API token for Alterdesk here
-export HUBOT_ALTERDESK_TOKEN=
+export NODE_ALTERDESK_TOKEN=
 
 # Alterdesk API
-export HUBOT_ALTERDESK_TRANSPORT=https
-export HUBOT_ALTERDESK_DOMAIN=api.alterdesk.com
-export HUBOT_ALTERDESK_PORT=443
-export HUBOT_ALTERDESK_VERSION=v1
-export HUBOT_ALTERDESK_HOST=$HUBOT_ALTERDESK_DOMAIN:$HUBOT_ALTERDESK_PORT
+export NODE_ALTERDESK_TRANSPORT=https
+export NODE_ALTERDESK_DOMAIN=api.alterdesk.com
+export NODE_ALTERDESK_PORT=443
+export NODE_ALTERDESK_VERSION=v1
+
+# Alterdesk adapter settings
+export HUBOT_ALTERDESK_TOKEN=$NODE_ALTERDESK_TOKEN
+export HUBOT_ALTERDESK_HOST=$NODE_ALTERDESK_DOMAIN:$NODE_ALTERDESK_PORT
 
 # Question times out after a minute
 export HUBOT_QUESTIONNAIRE_RESPONSE_TIMEOUT=60000
