@@ -1,0 +1,15 @@
+{
+  "name": "alterdeskbot",
+  "version": "0.0.0",
+  "private": true,
+  "author": "developer@alterdesk.com",
+  "description": "Example Hubot instance for Alterdesk libraries",
+  "dependencies": {
+    "alterdesk-example-script": "../alterdesk-example-script",
+    "hubot-alterdesk": "git@github.com:Alterdesk/hubot-alterdesk-adapter.git",
+    "hubot": "^2.19.0"
+  },
+  "engines": {
+    "node": "0.10.x"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "alterdesk-example-script",
+  "version": "1.0.0",
+  "description": "Example script for Hubot and all Alterdesk libraries",
+  "main": "example.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Alterdesk",
+  "license": "MIT",
+  "dependencies": {
+    "hubot-questionnaire-framework": "git@github.com:Alterdesk/hubot-questionnaire-framework.git",
+    "node-messenger-sdk": "git@github.com:Alterdesk/node-messenger-sdk.git",
+    "node-messenger-extra": "git@github.com:Alterdesk/node-messenger-extra.git"
+  }
+}

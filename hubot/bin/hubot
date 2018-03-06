@@ -1,0 +1,35 @@
+#!/bin/sh
+
+set -e
+
+npm install
+npm install ../alterdesk-example-script
+
+export PATH="node_modules/.bin:node_modules/hubot/node_modules/.bin:$PATH"
+
+# Set your OAuth 2.0 API token for Alterdesk here
+export HUBOT_ALTERDESK_TOKEN=
+
+# Alterdesk API
+export HUBOT_ALTERDESK_TRANSPORT=https
+export HUBOT_ALTERDESK_DOMAIN=api.alterdesk.com
+export HUBOT_ALTERDESK_PORT=443
+export HUBOT_ALTERDESK_VERSION=v1
+export HUBOT_ALTERDESK_HOST=$HUBOT_ALTERDESK_DOMAIN:$HUBOT_ALTERDESK_PORT
+
+# Shorter bot typing delay
+export HUBOT_ALTERDESK_TYPING_DELAY=500
+
+# Adapter does not force bot name prefix
+export HUBOT_ALTERDESK_PM_PREFIX=0
+
+# Hubot debug log level
+export HUBOT_LOG_LEVEL=debug
+
+# Check if API token is set
+if [ -z "$HUBOT_ALTERDESK_TOKEN" ]; then
+  echo "Alterdesk API token not set in script \"hubot/bin/hubot\", using terminal for interaction with Hubot"
+  exec node_modules/.bin/hubot --name "alterdeskbot" "$@"
+else
+  exec node_modules/.bin/hubot --name "alterdeskbot" --adapter "alterdesk" "$@"
+fi
