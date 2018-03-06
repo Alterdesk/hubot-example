@@ -9,8 +9,8 @@
   "author": "Alterdesk",
   "license": "MIT",
   "dependencies": {
-    "hubot-questionnaire-framework": "git@github.com:Alterdesk/hubot-questionnaire-framework.git",
-    "node-messenger-sdk": "git@github.com:Alterdesk/node-messenger-sdk.git",
-    "node-messenger-extra": "git@github.com:Alterdesk/node-messenger-extra.git"
+    "hubot-questionnaire-framework": "https://github.com/Alterdesk/hubot-questionnaire-framework.git",
+    "node-messenger-sdk": "https://github.com/Alterdesk/node-messenger-sdk.git",
+    "node-messenger-extra": "https://github.com/Alterdesk/node-messenger-extra.git"
   }
 }
