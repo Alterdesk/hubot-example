@@ -28,8 +28,8 @@ export HUBOT_LOG_LEVEL=debug
 
 # Check if API token is set
 if [ -z "$HUBOT_ALTERDESK_TOKEN" ]; then
-  echo "Alterdesk API token not set in script \"hubot/bin/hubot\", using terminal for interaction with Hubot"
-  exec node_modules/.bin/hubot --name "alterdeskbot" "$@"
+    echo "Alterdesk API token not set in script \"hubot/bin/hubot\", using terminal for interaction with Hubot"
+    exec node_modules/.bin/hubot --name "alterdeskbot" "$@"
 else
-  exec node_modules/.bin/hubot --name "alterdeskbot" --adapter "alterdesk" "$@"
+    exec node_modules/.bin/hubot --name "alterdeskbot" --adapter "alterdesk" "$@"
 fi
