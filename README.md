@@ -119,7 +119,7 @@ User << Bot: "I did not understand what you said, type 'help' to see what I can 
 ## Available commands
 
 ### Help
-To see what the bot can do for you, you can send "help", "what" or "support".
+To see what the bot can do for you, you can send "help", "what" or "support"
 ```c
 User >> Bot: "help"
 User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request a photo, 
@@ -127,7 +127,7 @@ User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request 
 ```
 
 ### Start
-Sending "start" to the bot will trigger a short questionnaire.
+Sending "start" to the bot will trigger a short questionnaire
 ```c
 User >> Bot: "start"
 User << Bot: "What is the answer for question one?"
@@ -138,7 +138,23 @@ User << Bot: "Thank you, your answers were: 'First answer' and 'Second answer'"
 ```
 
 ### Photo
+To request a photo from the bot, send "photo"
+```c
+User >> Bot: "photo"
+User << Bot: "Here is the photo you requested(with attachment bot.png)"
+```
 
 ### PDF
+To generate a pdf from the chat by the bot, you can send the command "pdf"
+```c
+User >> Bot: "pdf"
+User << Bot: "Generating pdf, one moment please"
+User << Bot: "Here is the pdf you requested(with attachment Chat.pdf)"
+```
 
 ### Ping
+And to simply ping the bot, send "ping"
+```c
+User >> Bot: "ping"
+User << Bot: "PONG!"
+```
