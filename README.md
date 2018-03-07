@@ -119,14 +119,15 @@ User << Bot: "I did not understand what you said, type 'help' to see what I can 
 ## Available commands
 
 ### Help
-To see what the bot can do for you, you can send "help", "what" or "support"
+To see what the bot can do for you, you can send "help". The example script also adds "what" and "support" as help 
+triggers using setHelpRegex() in the Questionnaire Control object.
 ```c
 User >> Bot: "help"
 User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request a photo, 
              'pdf' to request a pdf and 'ping' to ping."
 ```
 
-### Start
+### Short Questionnaire
 Sending "start" to the bot will trigger a short questionnaire
 ```c
 User >> Bot: "start"
@@ -137,14 +138,14 @@ User >> Bot: "Second answer"
 User << Bot: "Thank you, your answers were: 'First answer' and 'Second answer'"
 ```
 
-### Photo
+### Request photo
 To request a photo from the bot, send "photo"
 ```c
 User >> Bot: "photo"
 User << Bot: "Here is the photo you requested(with attachment bot.png)"
 ```
 
-### PDF
+### Generate chat PDF
 To generate a pdf from the chat by the bot, you can send the command "pdf"
 ```c
 User >> Bot: "pdf"
@@ -152,9 +153,54 @@ User << Bot: "Generating pdf, one moment please"
 User << Bot: "Here is the pdf you requested(with attachment Chat.pdf)"
 ```
 
-### Ping
+### Ping bot
 And to simply ping the bot, send "ping"
 ```c
 User >> Bot: "ping"
 User << Bot: "PONG!"
+```
+
+### Create a group chat
+The bot can create a group chat in which the requesting user will be added. Before starting the questionnaire for 
+creating the group, the bot will first check if the user is a coworker and thereby have permission to execute the 
+command. 
+
+To start the create group command, send "group"
+```c
+User >> Bot: "group"
+User >> Bot: "What should the subject for the group be?"
+User << Bot: "My new group"
+User >> Bot: "Group chat to create:
+              My new group
+              
+              Are you sure you want to create the group?"
+User << Bot: "yes"
+User >> Bot: "Creating group chat, one moment please"
+User >> Bot: "Group chat created 'My new group'"
+```
+
+### Invite a user
+The bot can invite a user for you. Before starting the questionnaire for inviting the user, the bot will first check 
+if the user is a coworker and thereby have permission to execute the command. 
+After the bot has invited the user, the bot will place you in a group chat with the invited user.
+
+To start inviting a user, send "invite"
+```c
+User >> Bot: "invite"
+User << Bot: "What is the first name of the user you want to invite?"
+User >> Bot: "piet"
+User << Bot: "What is the last name?"
+User >> Bot: "de graaf"
+User << Bot: "To which email address should the invite be sent?"
+User >> Bot: "pietdegraaf@example.com"
+User << Bot: "User:
+              Piet de Graaf
+              
+              Send invite to:
+              private@alterwaves.com
+              
+              Are you sure you want to send the invite?"
+User >> Bot: "yes"
+User << Bot: "Your invite is being sent and corresponding group chat is created, one moment please"
+User << Bot: "Group chat created and user is invited in 'Group chat with Piet de Graaf'"
 ```
