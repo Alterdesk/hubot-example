@@ -120,7 +120,7 @@ module.exports = function(robot) {
 
     // Check if the pdf command was heard
     robot.hear(/pdf/i, function(msg) {
-        msg.send("Generating PDF, one moment please")
+        msg.send("Generating pdf, one moment please")
 
         // Delay PDF creation to include latest messages
         setTimeout(function() {
@@ -155,7 +155,7 @@ module.exports = function(robot) {
                             // Upload the downloaded pdf file to the chat
                             var messageData = new Messenger.SendMessageData();
                             messageData.chatId = pdfData.chatId;
-                            messageData.message = "Here is the PDF you requested";
+                            messageData.message = "Here is the pdf you requested";
                             messageData.addAttachmentPath(pdfData.path);
                             messageData.isGroup = pdfData.isGroup;
                             messageData.isAux = pdfData.isAux;
@@ -163,17 +163,17 @@ module.exports = function(robot) {
                                 console.log("Send pdf successful: " + success);
                                 if(json != null) {
                                     var messageId = json["id"];
-                                    console.log("PDF message id: " + messageId);
+                                    console.log("Pdf message id: " + messageId);
                                 } else {
-                                    msg.send("Was unable to upload PDF to chat");
+                                    msg.send("Was unable to upload pdf to chat");
                                 }
                             });
                         } else {
-                            msg.send("Was unable to download PDF file");
+                            msg.send("Was unable to download pdf file");
                         }
                     });
                 } else {
-                    msg.send("Was unable to retrieve PDF file");
+                    msg.send("Was unable to retrieve pdf file");
                 }
             });
         }, DELAY_PDF_CREATION_MS);
