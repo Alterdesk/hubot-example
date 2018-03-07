@@ -64,30 +64,30 @@ variable
 
 ### One-to-one chat
 When sending messages to the bot in a one-to-one chat, the bot will always listen and respond
-```
+```c
 // One-to-one message always directed at bot, will respond
 User >> Bot: "help"
-User << Bot: "You can send 'command' to start a questionnaire, 'photo' to request a photo, 
+User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request a photo, 
              'pdf' to request a pdf and 'ping' to ping."
 ```
 
 ### Group chat
 When sending messages to the bot in a group chat, the bot will only listen and respond when mentioned
-```
-// No response
+```c
+// Not mentioning the bot in a group will trigger no response
 User >> Bot: "help"
 
 // Message directed at bot, will respond
 User >> Bot: "@<BOT_USERNAME> help"
-User << Bot: "You can send 'command' to start a questionnaire, 'photo' to request a photo, 
+User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request a photo, 
              'pdf' to request a pdf and 'ping' to ping."
 ```
 
 Once a questionnaire is started the bot does not need te be mentioned anymore by the user that started the 
 questionniare, the bot keeps listening until the questionnaire is finished or waiting for a user response times out.
-```
+```c
 // Start the questionnaire
-User >> Bot: "@<BOT_USERNAME> command"
+User >> Bot: "@<BOT_USERNAME> start"
 // Bot was triggered for first question
 User << Bot: "What is the answer for question one?"
 // User responds without mentioning the bot
@@ -99,3 +99,46 @@ User >> Bot: "Second answer"
 // Questionnaire summary, bot stops listening for messages without mention from user
 User << Bot: "Thank you, your answers were: 'First answer' and 'Second answer'"
 ```
+### Stopping a questionnaire
+If you do not want to finish a started questionnaire, you can either wait until waiting for a response times out, or
+send the stop command to stop the questionnaire immediately. The default stop command is "stop" but the example script
+has overridden the command with "abort" with the function set setStopRegex() in the Questionnaire Control object.
+```c
+User >> Bot: "abort"
+User << Bot: "Stopped the questionnaire"
+```
+
+### Unknown commands
+When you send the bot a command that it does not recognize(not one of the accpeted commands) it will reply that the bot
+did not understand you. This behaviour is enabled/disabled with setCatchAll() in the Questionnaire Control object.
+```c
+User >> Bot: "@<BOT_USERNAME> unknown"
+User << Bot: "I did not understand what you said, type 'help' to see what I can do for you."
+```
+
+## Available commands
+
+### Help
+To see what the bot can do for you, you can send "help", "what" or "support".
+```c
+User >> Bot: "help"
+User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request a photo, 
+             'pdf' to request a pdf and 'ping' to ping."
+```
+
+### Start
+Sending "start" to the bot will trigger a short questionnaire.
+```c
+User >> Bot: "start"
+User << Bot: "What is the answer for question one?"
+User >> Bot: "First answer"
+User << Bot: "What is the answer for question two?"
+User >> Bot: "Second answer"
+User << Bot: "Thank you, your answers were: 'First answer' and 'Second answer'"
+```
+
+### Photo
+
+### PDF
+
+### Ping
