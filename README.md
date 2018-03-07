@@ -1,6 +1,6 @@
 # Hubot example
 
-An hubot example using the following Alterdesk libraries
+A Hubot example using the following Alterdesk libraries
 * hubot-alterdesk-adapter
 * hubot-questionnaire-framework
 * node-messenger-sdk

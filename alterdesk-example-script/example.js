@@ -12,18 +12,29 @@
 // Commands:
 //   hubot help                 - Print help of this bot
 //   hubot command              - An example command
+//   hubot photo                - Upload a photo in the current chat
 //   hubot ping                 - Ping the bot
 //
 // Author:
 //   Alterdesk
 
 // Requirements
+var Messenger = require('node-messenger-sdk');
+var Extra = require('node-messenger-extra');
 const {Control, Listener, Answers} = require('hubot-questionnaire-framework');
+
+// Messenger API instance
+var messengerApi;
 
 // Questionnaire control instance
 var control;
 
 module.exports = function(robot) {
+
+    // Initialize messenger api
+    messengerApi = new Messenger.Api();
+    // Configure instance with defaults
+    messengerApi.configure();
 
     // Create a control instance
     control = new Control();
@@ -38,7 +49,7 @@ module.exports = function(robot) {
     // Set the text to send when help was requested
     control.setCatchHelpText("You can send \"command\" to start the questionnaire.");
 
-    // Wait for two minutes for a reply from a user
+    // Wait for two minutes for a reply from a user (overrides environment variable)
     control.setResponseTimeoutMs(120000);
     // Set the text to send when a user is too late
     control.setResponseTimeoutText("You waited too long to answer, stopped listening.");
@@ -49,7 +60,7 @@ module.exports = function(robot) {
     control.setCatchAllText("I did not understand what you said, type \"help\" to see what I can do for you.");
 
     // Mark the words "command" and "ping" as an accepted commands
-    control.addAcceptedCommands(["command", "ping"]);
+    control.addAcceptedCommands(["command", "photo", "ping"]);
 
     // Override the default robot message receiver
     control.overrideReceiver(robot);
@@ -57,7 +68,9 @@ module.exports = function(robot) {
     // Check if the start command of the questionnaire is heard
     robot.hear(/command/i, function(msg) {
         // Optional check if user has permission to execute the questionnaire
-        hasPermission(msg.message.user, function(allowed) {
+      var userId = control.getUserId(msg.message.user);
+      console.log("Invite command started by user: " + userId);
+      messengerApi.checkPermission(userId, "coworkers", null, function(allowed) {
             if(allowed) {
                 // Ask the first question
                 msg.send("What is the answer for question one?");
@@ -73,18 +86,29 @@ module.exports = function(robot) {
         });
     }),
 
+    robot.hear(/photo/i, function(msg) {
+        var messageData = new Messenger.SendMessageData();
+        messageData.chatId = msg.message.room;
+        messageData.message = "Here is the photo you requested";
+        messageData.addAttachmentPath("../bot.png");
+        messageData.isGroup = control.isUserInGroup(msg.message.user);
+        messageData.isAux = false;
+        messengerApi.sendMessage(messageData, function(success, json) {
+            console.log("Send photo successful: " + success);
+            if(json != null) {
+                var messageId = json["id"];
+                console.log("Photo message id: " + messageId);
+            } else {
+                msg.send("Was unable to upload photo to chat");
+            }
+        });
+    }),
+
     // Example simple command that does not use the questionnaire
     robot.hear(/ping/i, function(msg) {
         msg.send("PONG!");
     })
 };
-
-// Check if user has permission
-var hasPermission = function(user, callback) {
-    // Using a callback mechanism like this the check can be an asynchonous network call
-    callback(true);
-};
-
 
 // Check and store the answer for the first question and ask followup question when valid
 var callbackOne = function(response, listener) {
