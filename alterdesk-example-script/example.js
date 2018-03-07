@@ -11,7 +11,7 @@
 //
 // Commands:
 //   hubot help                 - Print help of this bot
-//   hubot command              - An example command
+//   hubot start                - Ask the user some questions
 //   hubot photo                - Upload a photo in the current chat
 //   hubot pdf                  - Generate and upload a pdf in the current chat
 //   hubot ping                 - Ping the bot
@@ -51,7 +51,7 @@ module.exports = function(robot) {
     // Override the help regex to detect "what" and "support" in addition to "help"
     control.setHelpRegex(/help|what|support/, 'i');
     // Set the text to send when help was requested
-    control.setCatchHelpText("You can send \"command\" to start a questionnaire, \"photo\" to request a photo, \"pdf\" to request a pdf and \"ping\" to ping.");
+    control.setCatchHelpText("You can send \"start\" to start a questionnaire, \"photo\" to request a photo, \"pdf\" to request a pdf and \"ping\" to ping.");
 
     // Wait for two minutes for a reply from a user (overrides environment variable)
     control.setResponseTimeoutMs(120000);
@@ -63,17 +63,17 @@ module.exports = function(robot) {
     // Set the text to send when an unknown command was heard
     control.setCatchAllText("I did not understand what you said, type \"help\" to see what I can do for you.");
 
-    // Mark the words "command" and "ping" as an accepted commands
-    control.addAcceptedCommands(["command", "photo", "pdf", "ping"]);
+    // Mark these words as accepted commands
+    control.addAcceptedCommands(["start", "photo", "pdf", "ping"]);
 
     // Override the default robot message receiver
     control.overrideReceiver(robot);
 
     // Check if the start command of the questionnaire is heard
-    robot.hear(/command/i, function(msg) {
+    robot.hear(/start/i, function(msg) {
         // Optional check if user has permission to execute the questionnaire
       var userId = control.getUserId(msg.message.user);
-      console.log("Invite command started by user: " + userId);
+      console.log("Start command started by user: " + userId);
       messengerApi.checkPermission(userId, "coworkers", null, function(allowed) {
             if(allowed) {
                 // Ask the first question
@@ -85,7 +85,7 @@ module.exports = function(robot) {
                 // Add the listener
                 return control.addListener(msg.message, listener);
             } else {
-                msg.send("Sorry you have no access to command.");
+                msg.send("Sorry you have no access to the start command.");
             }
         });
     }),
