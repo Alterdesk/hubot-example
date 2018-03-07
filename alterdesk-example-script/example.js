@@ -222,7 +222,7 @@ var callbackTwo = function(response, listener) {
     listener.answers.answerTwo = response.message.text;
 
     // Show summary of answers
-    response.send("Thank you, your answers were: " + listener.answers.answerOne + " and " + listener.answers.answerTwo);
+    response.send("Thank you, your answers were: \"" + listener.answers.answerOne + "\" and \"" + listener.answers.answerTwo + "\"");
 
     // Execute the command
     executeCommand(listener.answers);
