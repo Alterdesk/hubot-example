@@ -67,8 +67,8 @@ When sending messages to the bot in a one-to-one chat, the bot will always liste
 ```
 // One-to-one message always directed at bot, will respond
 User >> Bot: "help"
-User << Bot: "You can send "command" to start a questionnaire, "photo" to request a photo, "pdf" to request a pdf and 
-             "ping" to ping."
+User << Bot: "You can send 'command' to start a questionnaire, 'photo' to request a photo, 
+             'pdf' to request a pdf and 'ping' to ping."
 ```
 
 ### Group chat
@@ -79,8 +79,8 @@ User >> Bot: "help"
 
 // Message directed at bot, will respond
 User >> Bot: "@<BOT_USERNAME> help"
-User << Bot: "You can send 'command' to start a questionnaire, 'photo' to request a photo, 'pdf' to request a pdf and 
-             'ping' to ping."
+User << Bot: "You can send 'command' to start a questionnaire, 'photo' to request a photo, 
+             'pdf' to request a pdf and 'ping' to ping."
 ```
 
 Once a questionnaire is started the bot does not need te be mentioned anymore by the user that started the 
@@ -88,9 +88,14 @@ questionniare, the bot keeps listening until the questionnaire is finished or wa
 ```
 // Start the questionnaire
 User >> Bot: "@<BOT_USERNAME> command"
+// Bot was triggered for first question
 User << Bot: "What is the answer for question one?"
+// User responds without mentioning the bot
 User >> Bot: "First answer"
+// Bot was triggered because of active questionnaire
 User << Bot: "What is the answer for question two?"
+// User responds again
 User >> Bot: "Second answer"
+// Questionnaire summary, bot stops listening for messages without mention from user
 User << Bot: "Thank you, your answers were: 'First answer' and 'Second answer'"
 ```
