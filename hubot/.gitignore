@@ -1,3 +1,4 @@
 node_modules
 .DS_Store*
 .hubot_history
+groupchat_cache.json
