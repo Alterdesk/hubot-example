@@ -13,8 +13,10 @@ An hubot example using the following Alterdesk libraries
 #### Set API token in Hubot start script
 
 If you want to connect the example to a messenger user, set your OAuth 2.0 API token on <MESSENGER_API_TOKEN> like shown
-in the example below in *hubot/bin/hubot*. If you do not set the token, you can interact with the Hubot script through 
+in the example below. If you do not set the token, you can interact with the Hubot script through 
 the terminal.
+
+Bash script [hubot/bin/hubot](hubot/bin/hubot)
 ```bash
 # Set your OAuth 2.0 API token for Alterdesk here
 export HUBOT_ALTERDESK_TOKEN=<MESSENGER_API_TOKEN>
@@ -32,8 +34,10 @@ cd hubot
 
 #### Set API token in Hubot start script
 If you want to connect the example to a messenger user, set your OAuth 2.0 API token on <MESSENGER_API_TOKEN> like shown
-in the example below in *hubot/bin/hubot.cmd*. If you do not set the token, you can interact with the Hubot script 
+in the example below. If you do not set the token, you can interact with the Hubot script 
 through the command line.
+
+Batch script [hubot\bin\hubot.cmd](hubot/bin/hubot.cmd)
 ```bat
 REM Set your OAuth 2.0 API token for Alterdesk here
 SET HUBOT_ALTERDESK_TOKEN=<MESSENGER_API_TOKEN>
