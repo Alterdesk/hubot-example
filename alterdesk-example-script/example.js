@@ -481,7 +481,9 @@ var positiveAnswerRegex = new RegExp(/yes/, 'i');
 var negativeAnswerRegex = new RegExp(/no/, 'i');
 
 // General texts
-var catchHelpText = "You can send \"start\" to start a questionnaire, \"photo\" to request a photo, \"pdf\" to request a pdf and \"ping\" to ping.";
+var catchHelpText = "You can send \"start\" to start a questionnaire, \"photo\" to request a photo, ";
+catchHelpText += "\"pdf\" to request a pdf, \"ping\" to ping, \"group\" to create a group chat and ";
+catchHelpText += " \"invite\" to invite a private user.";
 var catchAllText = "I did not understand what you said, type \"help\" to see what I can do for you.";
 var timeoutText = "You waited too long to answer, stopped listening.";
 
