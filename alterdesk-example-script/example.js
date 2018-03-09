@@ -64,7 +64,12 @@ module.exports = function(robot) {
     control.setCatchAllText(catchAllText);
 
     // Mark these words as accepted commands
-    control.addAcceptedCommands(["start", "photo", "pdf", "ping", "group", "invite"]);
+    control.addAcceptedCommand("start", "Start a simple and short questionnaire");
+    control.addAcceptedCommand("photo", "Request a photo from me");
+    control.addAcceptedCommand("pdf", "Request a PDF chat log file from this chat");
+    control.addAcceptedCommand("ping", "Ping me");
+    control.addAcceptedCommand("group", "Create a group chat");
+    control.addAcceptedCommand("invite", "Invite a user into a group chat");
 
     // Override the default robot message receiver
     control.overrideReceiver(robot);
@@ -481,9 +486,7 @@ var positiveAnswerRegex = new RegExp(/yes/, 'i');
 var negativeAnswerRegex = new RegExp(/no/, 'i');
 
 // General texts
-var catchHelpText = "You can send \"start\" to start a questionnaire, \"photo\" to request a photo, ";
-catchHelpText += "\"pdf\" to request a pdf, \"ping\" to ping, \"group\" to create a group chat and ";
-catchHelpText += " \"invite\" to invite a private user.";
+var catchHelpText = "Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:\n";
 var catchAllText = "I did not understand what you said, type \"help\" to see what I can do for you.";
 var timeoutText = "You waited too long to answer, stopped listening.";
 
