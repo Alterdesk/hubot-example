@@ -67,8 +67,14 @@ When sending messages to the bot in a one-to-one chat, the bot will always liste
 ```c
 // One-to-one message always directed at bot, will respond
 User >> Bot: "help"
-User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request a photo, 
-             'pdf' to request a pdf and 'ping' to ping."
+User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:
+              
+               • 'start' - Start a simple and short questionnaire
+               • 'photo' - Request a photo from me
+               • 'pdf' - Request a PDF chat log file from this chat
+               • 'ping' - Ping me
+               • 'group' - Create a group chat
+               • 'invite' - Invite a user into a group chat"
 ```
 
 ### Group chat
@@ -79,8 +85,14 @@ User >> Bot: "help"
 
 // Message directed at bot, will respond
 User >> Bot: "@<BOT_USERNAME> help"
-User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request a photo, 
-             'pdf' to request a pdf and 'ping' to ping."
+User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:
+              
+               • 'start' - Start a simple and short questionnaire
+               • 'photo' - Request a photo from me
+               • 'pdf' - Request a PDF chat log file from this chat
+               • 'ping' - Ping me
+               • 'group' - Create a group chat
+               • 'invite' - Invite a user into a group chat"
 ```
 
 Once a questionnaire is started the bot does not need te be mentioned anymore by the user that started the 
@@ -123,8 +135,14 @@ To see what the bot can do for you, you can send "help". The example script also
 triggers using setHelpRegex() in the Questionnaire Control object.
 ```c
 User >> Bot: "help"
-User << Bot: "You can send 'start' to start a questionnaire, 'photo' to request a photo, 
-             'pdf' to request a pdf and 'ping' to ping."
+User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:
+              
+               • 'start' - Start a simple and short questionnaire
+               • 'photo' - Request a photo from me
+               • 'pdf' - Request a PDF chat log file from this chat
+               • 'ping' - Ping me
+               • 'group' - Create a group chat
+               • 'invite' - Invite a user into a group chat"
 ```
 
 ### Short Questionnaire
