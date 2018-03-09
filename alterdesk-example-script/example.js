@@ -64,12 +64,12 @@ module.exports = function(robot) {
     control.setCatchAllText(catchAllText);
 
     // Mark these words as accepted commands
-    control.addAcceptedCommand("start", "Start a simple and short questionnaire");
-    control.addAcceptedCommand("photo", "Request a photo from me");
-    control.addAcceptedCommand("pdf", "Request a PDF chat log file from this chat");
-    control.addAcceptedCommand("ping", "Ping me");
-    control.addAcceptedCommand("group", "Create a group chat");
-    control.addAcceptedCommand("invite", "Invite a user into a group chat");
+    control.addAcceptedCommand("start", startHelpText);
+    control.addAcceptedCommand("photo", photoHelpText);
+    control.addAcceptedCommand("pdf", pdfHelpText);
+    control.addAcceptedCommand("ping", pingHelpText);
+    control.addAcceptedCommand("group", groupHelpText);
+    control.addAcceptedCommand("invite", inviteHelpText);
 
     // Override the default robot message receiver
     control.overrideReceiver(robot);
@@ -178,7 +178,7 @@ module.exports = function(robot) {
 
     // Example simple command that does not use the questionnaire
     robot.hear(/ping/i, function(msg) {
-        msg.send("PONG!");
+        msg.send(pingPongText);
     }),
 
     robot.hear(/group/i, function(msg) {
@@ -491,6 +491,7 @@ var catchAllText = "I did not understand what you said, type \"help\" to see wha
 var timeoutText = "You waited too long to answer, stopped listening.";
 
 // Start command texts
+var startHelpText = "Start a simple and short questionnaire";
 var startQuestionOneText = "What is the answer for question one?";
 var startQuestionTwoText = "What is the answer for question two?";
 var startInvalidAnswer = "Invalid answer for question.";
@@ -499,17 +500,24 @@ var startThankYou = "Thank you, your answers were:";
 var startAnd = "and";
 
 // Photo command texts
+var photoHelpText = "Request a photo from me";
 var photoMessageText = "Here is the photo you requested";
 var photoUnableToUploadText = "Was unable to upload photo to chat";
 
 // PDF command texts
+var pdfHelpText = "Request a PDF chat log file from this chat";
 var pdfGeneratingText = "Generating pdf, one moment please";
 var pdfMessageText = "Here is the pdf you requested";
 var pdfUnableToUploadText = "Was unable to upload pdf to chat";
 var pdfUnableToDownloadText = "Was unable to download pdf file";
 var pdfUnableToRetrieveText = "Was unable to retrieve pdf file";
 
+// Ping command texts
+var pingHelpText = "Ping me";
+var pingPongText = "PONG!";
+
 // Group command texts
+var groupHelpText = "Create a group chat";
 var groupNoAccessText = "Sorry you have no access to the group command.";
 var groupQuestionSubjectText = "What should the subject for the group be?"
 var groupQuestionConfirmText = "Are you sure you want to create the group?";
@@ -522,6 +530,7 @@ var groupStoppedText = "Stopped creating group";
 var groupCreateText = "Group chat to create";
 
 // Invite command texts
+var inviteHelpText = "Invite a user into a group chat";
 var inviteNoAccessText = "Sorry you have no access to the invite command.";
 var inviteQuestionFirstNameText = "What is the first name of the user you want to invite?";
 var inviteQuestionLastNameText = "What is the last name?";
