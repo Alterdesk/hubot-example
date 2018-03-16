@@ -22,7 +22,7 @@
 // Requirements
 var Messenger = require('node-messenger-sdk');
 var Extra = require('node-messenger-extra');
-const {Control, Listener, Answers} = require('hubot-questionnaire-framework');
+const {Control, Listener, Answers, Flow} = require('hubot-questionnaire-framework');
 
 // Messenger API instance
 var messengerApi;
@@ -43,8 +43,8 @@ module.exports = function(robot) {
     // Create a control instance
     control = new Control();
 
-    // Override the stop regex to "abort" instead of "stop"
-    control.setStopRegex(new RegExp(/abort/, 'i'));
+    // Override the stop regex to "abort" in addition to "stop"
+    control.setStopRegex(new RegExp(/stop|abort/, 'i'));
 
     // Override default hubot help command
     control.setCatchHelp(true);
@@ -64,7 +64,7 @@ module.exports = function(robot) {
     control.setCatchAllText(catchAllText);
 
     // Mark these words as accepted commands
-    control.addAcceptedCommand("start", startHelpText);
+    control.addAcceptedCommand("form", formHelpText);
     control.addAcceptedCommand("photo", photoHelpText);
     control.addAcceptedCommand("pdf", pdfHelpText);
     control.addAcceptedCommand("ping", pingHelpText);
@@ -74,16 +74,22 @@ module.exports = function(robot) {
     // Override the default robot message receiver
     control.overrideReceiver(robot);
 
-    // Check if the start command of the questionnaire is heard
-    robot.hear(/start/i, function(msg) {
-        // Ask the first question
-        msg.send(startQuestionOneText);
-        // Object to contain the answers of the questionnaire
-        var answers = new Answers();
-        // Create a listener to await response for the user in this room
-        var listener = new Listener(msg, callbackOne, answers);
-        // Add the listener
-        return control.addListener(msg.message, listener);
+    // Check if the form command was heard
+    robot.hear(/form/i, function(msg) {
+        var subFlow = new Flow(control, "Sub flow stopped", "Sub flow error");
+        subFlow.text("subOne", "Sub question one?", "Sub error one")
+        .text("subTwo", "Sub question two?", "Sub error two");
+
+        new Flow(control, "Flow stopped", "Flow error")
+        .text("firstName", "Can you send me your first name?", "Invalid name.")
+        .text("lastName", "Can you send me your last name?", "Invalid name.")
+        .number("age", "How old are you? (Allowed range 12-90)", "Invalid number or out of range.", 12, 90)
+        .polar("polar", "Do you want to start a sub flow? (Yes or no)", "Invalid answer.", positiveAnswerRegex, negativeAnswerRegex, subFlow)
+        .email("email", "Can you send me an email address? (Allowed domains: .com and .nl)", "Invalid email address.", [".com",".nl"])
+        .phone("phone", "Can you send me a phone number? (Allowed country code +31)", "Invalid phone number.", ["+31"])
+        .mention("mentions", "Can you mention some users?", "Invalid mention.")
+        .finish(callbackFormFinished)
+        .start(msg);
     }),
 
     // Check if the photo command was heard
@@ -226,52 +232,26 @@ module.exports = function(robot) {
     })
 };
 
-// Check and store the answer for the first question and ask followup question when valid
-var callbackOne = function(response, listener) {
-    // Check if the stop regex was triggered
-    if(listener.stop) {
-        response.send(startStoppedText);
-        return;
+var callbackFormFinished = function(response, answers) {
+    var summary = formThankYou;
+    summary += "\n\nFirst name:\n" + Extra.capitalizeFirstLetter(answers.get("firstName"));
+    summary += "\n\nLast name:\n" + Extra.capitalizeLastName(answers.get("lastName"));
+    summary += "\n\nAge:\n" + answers.get("age");
+    summary += "\n\nPolar:\n" + answers.get("polar");
+    summary += "\n\nSub one:\n" + answers.get("subOne");
+    summary += "\n\nSub two:\n" + answers.get("subTwo");
+    summary += "\n\nEmail:\n" + answers.get("email");
+    summary += "\n\nPhone:\n" + answers.get("phone");
+    summary += "\n\nMentioned user ids:";
+    var mentions = answers.get("mentions");
+    if(mentions != null) {
+        for(var index in mentions) {
+            summary += "\n" + mentions[index];
+        }
+    } else {
+        summary += "null";
     }
-
-    // Check if rexex accepted the answer
-    if(listener.matches == null) {
-        response.send(startInvalidAnswer + " " + startQuestionOneText);
-        return control.addListener(response.message, new Listener(response, callbackOne, listener.answers));
-    }
-    // Valid answer, store in the answers object
-    listener.answers.answerOne = response.message.text;
-
-    response.send(startQuestionTwoText);
-    return control.addListener(response.message, new Listener(response, callbackTwo, listener.answers));
-};
-
-// Check and store the answer for the second question and show summary when valid
-var callbackTwo = function(response, listener) {
-    // Check if the stop regex was triggered
-    if(listener.stop) {
-        response.send(startStoppedText);
-        return;
-    }
-
-    // Check if rexex accepted the answer
-    if(listener.matches == null) {
-        response.send(startInvalidAnswer + " " + startQuestionTwoText);
-        return control.addListener(response.message, new Listener(response, callbackTwo, listener.answers));
-    }
-    // Valid answer, store in the answers object
-    listener.answers.answerTwo = response.message.text;
-
-    // Execute the command
-    executeStartCommand(response, listener.answers);
-};
-
-// Execute the start command
-var executeStartCommand = function(response, answers) {
-    // Do something with the given answers
-
-    // Show summary of answers
-    response.send(startThankYou + " \"" + answers.answerOne + "\" " + startAnd + " \"" + answers.answerTwo + "\"");
+    response.send(summary);
 };
 
 // Check and store chat subject when valid
@@ -491,13 +471,9 @@ var catchAllText = "I did not understand what you said, type \"help\" to see wha
 var timeoutText = "You waited too long to answer, stopped listening.";
 
 // Start command texts
-var startHelpText = "Start a simple and short questionnaire";
-var startQuestionOneText = "What is the answer for question one?";
-var startQuestionTwoText = "What is the answer for question two?";
-var startInvalidAnswer = "Invalid answer for question.";
-var startStoppedText = "Stopped the questionnaire";
-var startThankYou = "Thank you, your answers were:";
-var startAnd = "and";
+var formHelpText = "Fill in a form by using a questionnaire";
+var formStoppedText = "Stopped the questionnaire";
+var formThankYou = "Thank you, your answers were:";
 
 // Photo command texts
 var photoHelpText = "Request a photo from me";
