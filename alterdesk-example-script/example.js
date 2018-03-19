@@ -84,18 +84,27 @@ module.exports = function(robot) {
     // Check if the form command was heard
     robot.hear(/form/i, function(msg) {
         var emailFlow = new Flow(control);
-        emailFlow.email("email", "What is your email address? (Allowed domains: .com and .nl)", "Invalid email address.", [".com",".nl"]);
+        emailFlow.email("email", "What is your email address? (Allowed domains: .com and .nl)", "Invalid email address.")
+        .domains([".com",".nl"]);
 
         var reasonFlow = new Flow(control);
-        reasonFlow.text("reason", "Can you tell us why you don't want to subscribe?", "Invalid answer.");
+        reasonFlow.text("reason", "Can you tell us why you don't want to subscribe?", "Invalid answer.")
+        .length(3);
 
         new Flow(control, "Stopped filling in form", "Error while filling in form")
         .text("firstName", "Can you send me your first name?", "Invalid name.")
+        .length(2, 100)
         .text("lastName", "Can you send me your last name?", "Invalid name.")
-        .number("age", "How old are you? (Allowed range 12-90)", "Invalid number or out of range.", 12, 90)
-        .polar("subscribe", "Do you want to subscribe to our newsletter? (Yes or no)", "Invalid answer.", positiveRegex, negativeRegex, emailFlow, reasonFlow)
-        .phone("phone", "What is your phone number? (Allowed country code +31)", "Invalid phone number.", ["+31"])
+        .length(2, 100)
+        .number("age", "How old are you? (Allowed range 12-90)", "Invalid number or out of range.")
+        .range(12, 90)
+        .polar("subscribe", "Do you want to subscribe to our newsletter? (Yes or no)", "Invalid answer.")
+        .positive(positiveRegex, emailFlow)
+        .negative(negativeRegex, reasonFlow)
+        .phone("phone", "What is your phone number? (Allowed country code +31)", "Invalid phone number.")
+        .countryCodes(["+31"])
         .mention("mentions", "Which users do you want to include? (Use '@' to sum up users)", "Invalid mention.")
+        .robotAllowed(!control.isUserInGroup(msg.message.user))
         .finish(callbackFormFinished)
         .start(msg);
     }),
@@ -205,10 +214,15 @@ module.exports = function(robot) {
                 answers.add("userId", userId);
 
                 new Flow(control, "Stopped creating group", "An error occurred while creating group")
-                .text("subject", "What should the subject for the group be?", "Invalid group chat subject.")
-                .polar("autoClose", "Should the chat close automatically after a week of inactivity? (Yes or no)", "Invalid answer", positiveRegex, negativeRegex)
+                .text("subject", "What should the subject for the group be? (Accepted length 8-200)", "Invalid group chat subject.")
+                .length(8, 200)
+                .polar("autoClose", "Should the chat close automatically after a week of inactivity? (Yes or no)", "Invalid answer")
+                .positive(positiveRegex)
+                .negative(negativeRegex)
                 .summary(getGroupSummary)
-                .polar("confirmed", "Are you sure you want to create the group? (Yes or no)", "Invalid confirmation.", positiveRegex, negativeRegex)
+                .polar("confirmed", "Are you sure you want to create the group? (Yes or no)", "Invalid confirmation.")
+                .positive(positiveRegex)
+                .negative(negativeRegex)
                 .finish(callbackGroupFinished)
                 .start(msg, answers);
             } else {
@@ -235,7 +249,9 @@ module.exports = function(robot) {
                 .option(privateRegex)
                 .email("email", "To which email address should the invite be sent?", "Invalid email address.")
                 .summary(getInviteSummary)
-                .polar("confirmed", "Are you sure you want to send the invite? (Yes or no)", "Invalid confirmation.", positiveRegex, negativeRegex)
+                .polar("confirmed", "Are you sure you want to send the invite? (Yes or no)", "Invalid confirmation.")
+                .positive(positiveRegex)
+                .negative(negativeRegex)
                 .finish(callbackInviteFinished)
                 .start(msg, answers);
             } else {
@@ -257,11 +273,11 @@ var callbackFormFinished = function(response, answers) {
         summary += "\n\nReason not to subscribe:\n    " + answers.get("reason");
     }
     summary += "\n\nPhone:\n    " + answers.get("phone");
-    summary += "\n\nMentioned user ids:";
+    summary += "\n\nMentioned users:";
     var mentions = answers.get("mentions");
     if(mentions != null) {
         for(var index in mentions) {
-            summary += "\n    " + mentions[index];
+            summary += "\n    " + Extra.mentionToUserString(mentions[index]);
         }
     } else {
         summary += "null";
@@ -391,4 +407,3 @@ var callbackInviteFinished = function(response, answers) {
         }
     });
 };
-
