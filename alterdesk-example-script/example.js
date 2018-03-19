@@ -33,6 +33,13 @@ var control;
 // Script configurations
 var DELAY_PDF_CREATION_MS = 2000;
 
+// Regex
+var positiveRegex = new RegExp(/yes/, 'i');
+var negativeRegex = new RegExp(/no/, 'i');
+var coworkerRegex = new RegExp(/coworker/, 'i');
+var contactRegex = new RegExp(/contact/, 'i');
+var privateRegex = new RegExp(/private/, 'i');
+
 module.exports = function(robot) {
 
     // Initialize messenger api
@@ -51,43 +58,44 @@ module.exports = function(robot) {
     // Override the help regex to detect "what" and "support" in addition to "help"
     control.setHelpRegex(/help|what|support/, 'i');
     // Set the text to send when help was requested
-    control.setCatchHelpText(catchHelpText);
+    control.setCatchHelpText("Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:\n");
 
     // Wait for two minutes for a reply from a user (overrides environment variable)
     control.setResponseTimeoutMs(120000);
     // Set the text to send when a user is too late
-    control.setResponseTimeoutText(timeoutText);
+    control.setResponseTimeoutText("You waited too long to answer, stopped listening.");
 
     // When an unknown command was heard, do not pass it along to the default hubot receiver
     control.setCatchAll(true);
     // Set the text to send when an unknown command was heard
-    control.setCatchAllText(catchAllText);
+    control.setCatchAllText("I did not understand what you said, type \"help\" to see what I can do for you.");
 
     // Mark these words as accepted commands
-    control.addAcceptedCommand("form", formHelpText);
-    control.addAcceptedCommand("photo", photoHelpText);
-    control.addAcceptedCommand("pdf", pdfHelpText);
-    control.addAcceptedCommand("ping", pingHelpText);
-    control.addAcceptedCommand("group", groupHelpText);
-    control.addAcceptedCommand("invite", inviteHelpText);
+    control.addAcceptedCommand("form", "Fill in a form by using a questionnaire");
+    control.addAcceptedCommand("photo", "Request a photo from me");
+    control.addAcceptedCommand("pdf", "Request a PDF chat log file from this chat");
+    control.addAcceptedCommand("ping", "Ping me");
+    control.addAcceptedCommand("group", "Create a group chat");
+    control.addAcceptedCommand("invite", "Invite a user into a new group chat");
 
     // Override the default robot message receiver
     control.overrideReceiver(robot);
 
     // Check if the form command was heard
     robot.hear(/form/i, function(msg) {
-        var subFlow = new Flow(control, "Sub flow stopped", "Sub flow error");
-        subFlow.text("subOne", "Sub question one?", "Sub error one")
-        .text("subTwo", "Sub question two?", "Sub error two");
+        var emailFlow = new Flow(control);
+        emailFlow.email("email", "What is your email address? (Allowed domains: .com and .nl)", "Invalid email address.", [".com",".nl"]);
 
-        new Flow(control, "Flow stopped", "Flow error")
+        var reasonFlow = new Flow(control);
+        reasonFlow.text("reason", "Can you tell us why you don't want to subscribe?", "Invalid answer.");
+
+        new Flow(control, "Stopped filling in form", "Error while filling in form")
         .text("firstName", "Can you send me your first name?", "Invalid name.")
         .text("lastName", "Can you send me your last name?", "Invalid name.")
         .number("age", "How old are you? (Allowed range 12-90)", "Invalid number or out of range.", 12, 90)
-        .polar("polar", "Do you want to start a sub flow? (Yes or no)", "Invalid answer.", positiveAnswerRegex, negativeAnswerRegex, subFlow)
-        .email("email", "Can you send me an email address? (Allowed domains: .com and .nl)", "Invalid email address.", [".com",".nl"])
-        .phone("phone", "Can you send me a phone number? (Allowed country code +31)", "Invalid phone number.", ["+31"])
-        .mention("mentions", "Can you mention some users?", "Invalid mention.")
+        .polar("subscribe", "Do you want to subscribe to our newsletter? (Yes or no)", "Invalid answer.", positiveRegex, negativeRegex, emailFlow, reasonFlow)
+        .phone("phone", "What is your phone number? (Allowed country code +31)", "Invalid phone number.", ["+31"])
+        .mention("mentions", "Which users do you want to include? (Use '@' to sum up users)", "Invalid mention.")
         .finish(callbackFormFinished)
         .start(msg);
     }),
@@ -98,7 +106,7 @@ module.exports = function(robot) {
         var messageData = new Messenger.SendMessageData();
 
         // Text body of the message
-        messageData.message = photoMessageText;
+        messageData.message = "Here is the photo you requested";
         // Optional attachment to send(local absolute or relative paths)
         messageData.addAttachmentPath("../bot.png");
         // Chat id to send the message in
@@ -115,7 +123,7 @@ module.exports = function(robot) {
                 var messageId = json["id"];
                 console.log("Photo message id: " + messageId);
             } else {
-                msg.send(photoUnableToUploadText);
+                msg.send("Was unable to upload photo to chat");
             }
         });
     }),
@@ -123,7 +131,7 @@ module.exports = function(robot) {
     // Check if the pdf command was heard
     robot.hear(/pdf/i, function(msg) {
         // Notify user of generating pdf
-        msg.send(pdfGeneratingText)
+        msg.send("Generating pdf, one moment please")
 
         // Delay PDF creation to include latest messages
         setTimeout(function() {
@@ -158,7 +166,7 @@ module.exports = function(robot) {
                             // Upload the downloaded pdf file to the chat
                             var messageData = new Messenger.SendMessageData();
                             messageData.chatId = pdfData.chatId;
-                            messageData.message = pdfMessageText;
+                            messageData.message = "Here is the pdf you requested";
                             messageData.addAttachmentPath(pdfData.path);
                             messageData.isGroup = pdfData.isGroup;
                             messageData.isAux = pdfData.isAux;
@@ -168,15 +176,15 @@ module.exports = function(robot) {
                                     var messageId = json["id"];
                                     console.log("Pdf message id: " + messageId);
                                 } else {
-                                    msg.send(pdfUnableToUploadText);
+                                    msg.send("Was unable to upload pdf to chat");
                                 }
                             });
                         } else {
-                            msg.send(pdfUnableToDownloadText);
+                            msg.send("Was unable to download pdf file");
                         }
                     });
                 } else {
-                    msg.send(pdfUnableToRetrieveText);
+                    msg.send("Was unable to retrieve pdf file");
                 }
             });
         }, DELAY_PDF_CREATION_MS);
@@ -184,7 +192,7 @@ module.exports = function(robot) {
 
     // Example simple command that does not use the questionnaire
     robot.hear(/ping/i, function(msg) {
-        msg.send(pingPongText);
+        msg.send("PONG!");
     }),
 
     robot.hear(/group/i, function(msg) {
@@ -193,18 +201,18 @@ module.exports = function(robot) {
         console.log("Create group command started by user: " + userId);
         messengerApi.checkPermission(userId, "coworkers", null, function(allowed) {
             if(allowed) {
-                // Ask the first question
-                msg.send(groupQuestionSubjectText);
-                // Object to contain the answers of the questionnaire
                 var answers = new Answers();
-                // Add the requesting user id to add as member in the group
-                answers.userId = userId;
-                // Create a listener to await response for the user in this room
-                var listener = new Listener(msg, callbackSubject, answers);
-                // Add the listener
-                return control.addListener(msg.message, listener);
+                answers.add("userId", userId);
+
+                new Flow(control, "Stopped creating group", "An error occurred while creating group")
+                .text("subject", "What should the subject for the group be?", "Invalid group chat subject.")
+                .polar("autoClose", "Should the chat close automatically after a week of inactivity? (Yes or no)", "Invalid answer", positiveRegex, negativeRegex)
+                .summary(getGroupSummary)
+                .polar("confirmed", "Are you sure you want to create the group? (Yes or no)", "Invalid confirmation.", positiveRegex, negativeRegex)
+                .finish(callbackGroupFinished)
+                .start(msg, answers);
             } else {
-                msg.send(groupNoAccessText);
+                msg.send("Sorry you have no access to the group command.");
             }
         });
     }),
@@ -215,32 +223,39 @@ module.exports = function(robot) {
         console.log("Invite user command started by user: " + userId);
         messengerApi.checkPermission(userId, "coworkers", null, function(allowed) {
             if(allowed) {
-                // Ask the first question
-                msg.send(inviteQuestionFirstNameText);
-                // Object to contain the answers of the questionnaire
                 var answers = new Answers();
-                // Add the requesting user id to add as member in the group
-                answers.userId = userId;
-                // Create a listener to await response for the user in this room
-                var listener = new Listener(msg, callbackFirstName, answers);
-                // Add the listener
-                return control.addListener(msg.message, listener);
+                answers.add("userId", userId);
+
+                new Flow(control, "Stopped inviting user", "An error occurred while inviting user")
+                .text("firstName", "What is the first name of the user you want to invite?", "Invalid name.")
+                .text("lastName", "What is the last name?", "Invalid name.")
+                .multiple("inviteType", "Do you want to invite the user as a coworker, contact or private user?", "Invalid choice.")
+                .option(coworkerRegex)
+                .option(contactRegex)
+                .option(privateRegex)
+                .email("email", "To which email address should the invite be sent?", "Invalid email address.")
+                .summary(getInviteSummary)
+                .polar("confirmed", "Are you sure you want to send the invite? (Yes or no)", "Invalid confirmation.", positiveRegex, negativeRegex)
+                .finish(callbackInviteFinished)
+                .start(msg, answers);
             } else {
-                msg.send(inviteNoAccessText);
+                msg.send("Sorry you have no access to the invite command.");
             }
         });
     })
 };
 
+// Filling in form flow finished callback
 var callbackFormFinished = function(response, answers) {
-    var summary = formThankYou;
+    var summary = "Thank you, your answers were:";
     summary += "\n\nFirst name:\n" + Extra.capitalizeFirstLetter(answers.get("firstName"));
     summary += "\n\nLast name:\n" + Extra.capitalizeLastName(answers.get("lastName"));
     summary += "\n\nAge:\n" + answers.get("age");
-    summary += "\n\nPolar:\n" + answers.get("polar");
-    summary += "\n\nSub one:\n" + answers.get("subOne");
-    summary += "\n\nSub two:\n" + answers.get("subTwo");
-    summary += "\n\nEmail:\n" + answers.get("email");
+    if(answers.get("subscribe")) {
+        summary += "\n\nEmail address to subscribe:\n" + answers.get("email");
+    } else {
+        summary += "\n\nReason not to subscribe:\n" + answers.get("reason");
+    }
     summary += "\n\nPhone:\n" + answers.get("phone");
     summary += "\n\nMentioned user ids:";
     var mentions = answers.get("mentions");
@@ -254,63 +269,40 @@ var callbackFormFinished = function(response, answers) {
     response.send(summary);
 };
 
-// Check and store chat subject when valid
-var callbackSubject = function(response, listener) {
-    // Check if the stop regex was triggered
-    if(listener.stop) {
-        response.send(groupStoppedText);
-        return;
-    }
-
-    // Check if rexex accepted the answer
-    if(listener.matches == null) {
-        response.send(groupInvalidSubject + " " + groupQuestionSubjectText);
-        return control.addListener(response.message, new Listener(response, callbackSubject, listener.answers));
-    }
-    // Valid answer, store in the answers object
-    listener.answers.subject = response.message.text;
-
-    response.send(getGroupSummary(listener.answers) + groupQuestionConfirmText);
-    return control.addListener(response.message, new Listener(response, callbackConfirmGroup, listener.answers));
-};
-
-// Check for confirmation and execute when confirmed
-var callbackConfirmGroup = function(response, listener) {
-    // Check if the stop regex was triggered
-    if(listener.stop) {
-        response.send(groupStoppedText);
-        return;
-    }
-
-    if(response.message.match(positiveAnswerRegex)) {
-        executeGroupCommand(response, listener.answers);
-    } else if(response.message.match(negativeAnswerRegex)) {
-        response.send(groupStoppedText);
-    } else {
-        response.send(groupInvalidConfirmation + " " + groupQuestionConfirmText);
-        return control.addListener(response.message, new Listener(response, callbackConfirmGroup, listener.answers));
-    }
-};
 
 // Format an group chat summary of the given answers
 var getGroupSummary = function(answers) {
-    var summary = groupCreateText + ":\n" + answers.subject + "\n\n";
+    var summary = "Group chat to create:";
+    summary += "\n\nSubject:\n" + answers.get("subject");
+    summary += "\n\nAuto close:\n";
+    if(answers.get("autoClose")) {
+        summary += "Yes";
+    } else {
+        summary += "No";
+    }
     return summary;
 };
 
-var executeGroupCommand = function(response, answers) {
+// Create group flow finished callback
+var callbackGroupFinished = function(response, answers) {
+    if(!answers.get("confirmed")) {
+        response.send("Not creating group " + answers.get("subject"));
+        return;
+    }
     // Notify user that creating group has started
-    response.send(groupExecutingText);
+    response.send("Creating group chat, one moment please");
 
     // Create a group data instance
     var groupData = new Messenger.CreateGroupData();
 
     // Set the chat subject
-    groupData.subject = answers.subject;
+    groupData.subject = answers.get("subject");
     // Optional members to add
-    groupData.addMemberId(answers.userId);
-    // Automatically close the group after 7 days of inactivity (optional)
-    groupData.autoCloseAfter = 7;
+    groupData.addMemberId(answers.get("userId"));
+    if(answers.get("autoClose")) {
+        // Automatically close the group after 7 days of inactivity (optional)
+        groupData.autoCloseAfter = 7;
+    }
 
     // Create group and parse result in callback
     messengerApi.createGroup(groupData, function(success, json) {
@@ -318,121 +310,59 @@ var executeGroupCommand = function(response, answers) {
         if(json != null) {
             var groupId = json["id"];
             console.log("Created group with id: " + groupId);
-            response.send(groupDoneText + " \"" + groupData.subject + "\"");
+            response.send("Group chat created \"" + groupData.subject + "\"");
         } else {
-            response.send(groupFailedText);
+            response.send("Unable to create group chat");
         }
     });
 };
 
-// Check and store first name and ask last name when valid
-var callbackFirstName = function(response, listener) {
-    // Check if the stop regex was triggered
-    if(listener.stop) {
-        response.send(inviteStoppedText);
-        return;
-    }
-
-    // Check if rexex accepted the answer
-    if(listener.matches == null) {
-        response.send(inviteInvalidName + " " + inviteQuestionFirstNameText);
-        return control.addListener(response.message, new Listener(response, callbackFirstName, listener.answers));
-    }
-    // Valid answer, store in the answers object
-    listener.answers.firstName = Extra.capitalizeFirstLetter(response.message.text);
-
-    response.send(inviteQuestionLastNameText);
-    return control.addListener(response.message, new Listener(response, callbackLastName, listener.answers));
-};
-
-// Check and store last name and ask email address when valid
-var callbackLastName = function(response, listener) {
-    // Check if the stop regex was triggered
-    if(listener.stop) {
-        response.send(inviteStoppedText);
-        return;
-    }
-
-    // Check if rexex accepted the answer
-    if(listener.matches == null) {
-        response.send(inviteInvalidName + " " + inviteQuestionLastNameText);
-        return control.addListener(response.message, new Listener(response, callbackLastName, listener.answers));
-    }
-    // Valid answer, store in the answers object
-    listener.answers.lastName = Extra.capitalizeLastName(response.message.text);
-
-    response.send(inviteQuestionEmailText);
-    return control.addListener(response.message, new Listener(response, callbackEmail, listener.answers, Extra.getEmailRegex()));
-};
-
-// Check and store email address and ask confirmation when valid
-var callbackEmail = function(response, listener) {
-    // Check if the stop regex was triggered
-    if(listener.stop) {
-        response.send(inviteStoppedText);
-        return;
-    }
-
-    // Check if rexex accepted the answer
-    if(listener.matches == null) {
-        response.send(inviteInvalidEmail + " " + inviteQuestionEmailText);
-        return control.addListener(response.message, new Listener(response, callbackEmail, listener.answers, Extra.getEmailRegex()));
-    }
-    // Valid answer, store in the answers object
-    listener.answers.email = response.message.text;
-
-    response.send(getInviteSummary(listener.answers) + inviteQuestionConfirmText);
-    return control.addListener(response.message, new Listener(response, callbackConfirmInvite, listener.answers));
-};
-
-// Check for confirmation and execute when confirmed
-var callbackConfirmInvite = function(response, listener) {
-    // Check if the stop regex was triggered
-    if(listener.stop) {
-        response.send(inviteStoppedText);
-        return;
-    }
-
-    if(response.message.match(positiveAnswerRegex)) {
-        executeInviteCommand(response, listener.answers);
-    } else if(response.message.match(negativeAnswerRegex)) {
-        response.send(inviteStoppedText);
-    } else {
-        response.send(inviteInvalidConfirmation + inviteQuestionConfirmText);
-        return control.addListener(response.message, new Listener(response, callbackConfirmInvite, listener.answers));
-    }
-}
-
 // Format an invite summary of the given answers
 var getInviteSummary = function(answers) {
-    var summary = inviteUserText + ":\n" + answers.firstName + " " + answers.lastName + "\n\n";
-    summary += inviteSendToText + ":\n";
-    if(answers.email != null) {
-        summary += answers.email + "\n\n";
-    } else if(answers.phoneNumber) {
-        summary += answers.phoneNumber + "\n\n";
+    var summary = "User to invite:";
+    summary += "\n\nName:\n";
+    summary += Extra.capitalizeFirstLetter(answers.get("firstName"))
+    summary += " " + Extra.capitalizeLastName(answers.get("lastName"));
+    summary += "\n\nSend invite to:\n";
+    if(answers.get("email") != null) {
+        summary += answers.get("email");
+    } else if(answers.get("phoneNumber") != null) {
+        summary += answers.get("phoneNumber");
     } else {
-        summary += "<INVALID_DESTINATION>\n\n";
+        summary += "<INVALID_DESTINATION>";
     }
     return summary;
 };
 
-
-var executeInviteCommand = function(response, answers) {
+// Invite user flow finished callback
+var callbackInviteFinished = function(response, answers) {
+    var firstName = Extra.capitalizeFirstLetter(answers.get("firstName"));
+    var lastName = Extra.capitalizeLastName(answers.get("lastName"));
+    if(!answers.get("confirmed")) {
+        response.send("Not inviting user " + firstName + " " + lastName);
+        return;
+    }
     // Notify user that invite has started
-    response.send(inviteExecutingText);
+    response.send("Your invite is being sent and corresponding group chat is created, one moment please");
 
     // Create a invite user data instance
     var inviteData = new Messenger.InviteUserData();
 
     // First name of the user (optional)
-    inviteData.firstName = answers.firstName;
+    inviteData.firstName = firstName;
     // Last name of the user (optional)
-    inviteData.lastName = answers.lastName;
+    inviteData.lastName = lastName;
     // Invite type (coworker, contact, private_user)
-    inviteData.inviteType = "private_user";
+    var inviteType = answers.get("inviteType");
+    if(inviteType.match(coworkerRegex)) {
+        inviteData.inviteType = "coworker";
+    } else if(inviteType.match(contactRegex)) {
+        inviteData.inviteType = "contact";
+    } else {
+        inviteData.inviteType = "private_user";
+    }
     // Email address to send invite to
-    inviteData.email = answers.email;
+    inviteData.email = answers.get("email");
     // Create a one-to-one chat with this user
     inviteData.createConversation = false;
 
@@ -440,9 +370,9 @@ var executeInviteCommand = function(response, answers) {
     var groupData = new Messenger.CreateGroupData();
 
     // Set the chat subject
-    groupData.subject = "Group chat with " + answers.firstName + " " + answers.lastName;
+    groupData.subject = "Group chat with " + firstName + " " + lastName;
     // Optional members to add
-    groupData.addMemberId(answers.userId);
+    groupData.addMemberId(answers.get("userId"));
     // Invite user in the group
     groupData.addInvite(inviteData);
     // Automatically close the group after 7 days of inactivity (optional)
@@ -454,70 +384,10 @@ var executeInviteCommand = function(response, answers) {
         if(json != null) {
             var groupId = json["id"];
             console.log("Created group with id: " + groupId);
-            response.send(inviteDoneText + " \"" + groupData.subject + "\"");
+            response.send("Group chat created and user is invited in \"" + groupData.subject + "\"");
         } else {
-            response.send(inviteFailedText);
+            response.send("Unable to invite user and/or create group chat");
         }
     });
 };
 
-// Regex
-var positiveAnswerRegex = new RegExp(/yes/, 'i');
-var negativeAnswerRegex = new RegExp(/no/, 'i');
-
-// General texts
-var catchHelpText = "Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:\n";
-var catchAllText = "I did not understand what you said, type \"help\" to see what I can do for you.";
-var timeoutText = "You waited too long to answer, stopped listening.";
-
-// Start command texts
-var formHelpText = "Fill in a form by using a questionnaire";
-var formStoppedText = "Stopped the questionnaire";
-var formThankYou = "Thank you, your answers were:";
-
-// Photo command texts
-var photoHelpText = "Request a photo from me";
-var photoMessageText = "Here is the photo you requested";
-var photoUnableToUploadText = "Was unable to upload photo to chat";
-
-// PDF command texts
-var pdfHelpText = "Request a PDF chat log file from this chat";
-var pdfGeneratingText = "Generating pdf, one moment please";
-var pdfMessageText = "Here is the pdf you requested";
-var pdfUnableToUploadText = "Was unable to upload pdf to chat";
-var pdfUnableToDownloadText = "Was unable to download pdf file";
-var pdfUnableToRetrieveText = "Was unable to retrieve pdf file";
-
-// Ping command texts
-var pingHelpText = "Ping me";
-var pingPongText = "PONG!";
-
-// Group command texts
-var groupHelpText = "Create a group chat";
-var groupNoAccessText = "Sorry you have no access to the group command.";
-var groupQuestionSubjectText = "What should the subject for the group be?"
-var groupQuestionConfirmText = "Are you sure you want to create the group?";
-var groupExecutingText = "Creating group chat, one moment please";
-var groupDoneText = "Group chat created";
-var groupFailedText = "Unable to create group chat";
-var groupInvalidSubject = "Invalid group chat subject.";
-var groupInvalidConfirmation = "Invalid confirmation.";
-var groupStoppedText = "Stopped creating group";
-var groupCreateText = "Group chat to create";
-
-// Invite command texts
-var inviteHelpText = "Invite a user into a group chat";
-var inviteNoAccessText = "Sorry you have no access to the invite command.";
-var inviteQuestionFirstNameText = "What is the first name of the user you want to invite?";
-var inviteQuestionLastNameText = "What is the last name?";
-var inviteQuestionEmailText = "To which email address should the invite be sent?";
-var inviteQuestionConfirmText = "Are you sure you want to send the invite?";
-var inviteExecutingText = "Your invite is being sent and corresponding group chat is created, one moment please";
-var inviteDoneText = "Group chat created and user is invited in";
-var inviteFailedText = "Unable to invite user and/or create group chat";
-var inviteInvalidName = "Invalid name.";
-var inviteInvalidEmail = "Invalid email address.";
-var inviteInvalidConfirmation = "Invalid confirmation.";
-var inviteStoppedText = "Stopped inviting user";
-var inviteUserText = "User";
-var inviteSendToText = "Send invite to";
