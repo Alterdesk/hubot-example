@@ -69,7 +69,7 @@ When sending messages to the bot in a one-to-one chat, the bot will always liste
 User >> Bot: "help"
 User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:
               
-               • 'start' - Start a simple and short questionnaire
+               • 'form' - Fill in a form by using a questionnaire
                • 'photo' - Request a photo from me
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
@@ -87,7 +87,7 @@ User >> Bot: "help"
 User >> Bot: "@<BOT_USERNAME> help"
 User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:
               
-               • 'start' - Start a simple and short questionnaire
+               • 'form' - Fill in a form by using a questionnaire
                • 'photo' - Request a photo from me
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
@@ -99,17 +99,17 @@ Once a questionnaire is started the bot does not need te be mentioned anymore by
 questionniare, the bot keeps listening until the questionnaire is finished or waiting for a user response times out.
 ```c
 // Start the questionnaire
-User >> Bot: "@<BOT_USERNAME> start"
+User >> Bot: "@<BOT_USERNAME> form"
 // Bot was triggered for first question
-User << Bot: "What is the answer for question one?"
+User << Bot: "Can you send me your first name?"
 // User responds without mentioning the bot
-User >> Bot: "First answer"
+User >> Bot: "piet"
 // Bot was triggered because of active questionnaire
-User << Bot: "What is the answer for question two?"
+User << Bot: "Can you send me your last name?"
 // User responds again
-User >> Bot: "Second answer"
-// Questionnaire summary, bot stops listening for messages without mention from user
-User << Bot: "Thank you, your answers were: 'First answer' and 'Second answer'"
+User >> Bot: "de graaf"
+// After the questionnaire is done, the bot stops listening for messages without mention from the user
+User << Bot: "Thank you, your answers were: ...."
 ```
 ### Stopping a questionnaire
 If you do not want to finish a started questionnaire, you can either wait until waiting for a response times out, or
@@ -137,7 +137,7 @@ triggers using setHelpRegex() in the Questionnaire Control object.
 User >> Bot: "help"
 User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:
               
-               • 'start' - Start a simple and short questionnaire
+               • 'form' - Fill in a form by using a questionnaire
                • 'photo' - Request a photo from me
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
@@ -145,15 +145,43 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'invite' - Invite a user into a group chat"
 ```
 
-### Short Questionnaire
-Sending "start" to the bot will trigger a short questionnaire
+### Guided form
+Sending "form" to the bot will trigger a guided form to fill in
 ```c
-User >> Bot: "start"
-User << Bot: "What is the answer for question one?"
-User >> Bot: "First answer"
-User << Bot: "What is the answer for question two?"
-User >> Bot: "Second answer"
-User << Bot: "Thank you, your answers were: 'First answer' and 'Second answer'"
+User >> Bot: "form"
+User << Bot: "Can you send me your first name?"
+User >> Bot: "piet"
+User << Bot: "Can you send me your last name?"
+User >> Bot: "de graaf"
+User << Bot: "How old are you? (Allowed range 12-90)"
+User >> Bot: "30"
+User << Bot: "Do you want to subscribe to our newsletter? (Yes or no)"
+User >> Bot: "yes"
+User << Bot: "What is your email address? (Allowed domains: .com and .nl)"
+User >> Bot: "pietdegraaf@example.com"
+User << Bot: "What is your phone number? (Allowed country code +31)"
+User >> Bot: "+3123456789"
+User << Bot: "Which users do you want to include? (Use '@' to sum up users)"
+User >> Bot: "@Harry de Boer"
+User << Bot: "Thank you, your answers were:
+              
+              First name:
+                  Piet
+              
+              Last name:
+                  de Graaf
+              
+              Age:
+                  30
+              
+              Email address to subscribe:
+                  pietdegraaf@example.com
+              
+              Phone:
+                  +3123456789
+              
+              Mentioned user ids:
+                  a37c725e-fe91-4033-a6ce-6a5a81eacba7"
 ```
 
 ### Request photo
@@ -186,15 +214,21 @@ command.
 To start the create group command, send "group"
 ```c
 User >> Bot: "group"
-User >> Bot: "What should the subject for the group be?"
-User << Bot: "My new group"
-User >> Bot: "Group chat to create:
-              My new group
+User << Bot: "What should the subject for the group be?"
+User >> Bot: "My new group"
+User << Bot: "Should the chat close automatically after a week of inactivity? (Yes or no)"
+User >> Bot: "My new group"
+User << Bot: "Group chat to create:
               
-              Are you sure you want to create the group?"
-User << Bot: "yes"
-User >> Bot: "Creating group chat, one moment please"
-User >> Bot: "Group chat created 'My new group'"
+              Subject:
+                  My new group
+              
+              Auto close:
+                  Yes"
+User << Bot: "Are you sure you want to create the group? (Yes or no)"
+User >> Bot: "yes"
+User << Bot: "Creating group chat, one moment please"
+User << Bot: "Group chat created 'My new group'"
 ```
 
 ### Invite a user
@@ -209,15 +243,19 @@ User << Bot: "What is the first name of the user you want to invite?"
 User >> Bot: "piet"
 User << Bot: "What is the last name?"
 User >> Bot: "de graaf"
+User << Bot: "Do you want to invite the user as a coworker, contact or private user?"
+User >> Bot: "private"
 User << Bot: "To which email address should the invite be sent?"
 User >> Bot: "pietdegraaf@example.com"
 User << Bot: "User:
-              Piet de Graaf
+                  Piet de Graaf
+
+              Invite as:
+                  private
               
               Send invite to:
-              private@alterwaves.com
-              
-              Are you sure you want to send the invite?"
+                  pietdegraaf@example.com"
+User << Bot: "Are you sure you want to send the invite? (Yes or no)"
 User >> Bot: "yes"
 User << Bot: "Your invite is being sent and corresponding group chat is created, one moment please"
 User << Bot: "Group chat created and user is invited in 'Group chat with Piet de Graaf'"
