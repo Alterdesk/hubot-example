@@ -248,20 +248,20 @@ module.exports = function(robot) {
 // Filling in form flow finished callback
 var callbackFormFinished = function(response, answers) {
     var summary = "Thank you, your answers were:";
-    summary += "\n\nFirst name:\n" + Extra.capitalizeFirstLetter(answers.get("firstName"));
-    summary += "\n\nLast name:\n" + Extra.capitalizeLastName(answers.get("lastName"));
-    summary += "\n\nAge:\n" + answers.get("age");
+    summary += "\n\nFirst name:\n    " + Extra.capitalizeFirstLetter(answers.get("firstName"));
+    summary += "\n\nLast name:\n    " + Extra.capitalizeLastName(answers.get("lastName"));
+    summary += "\n\nAge:\n    " + answers.get("age");
     if(answers.get("subscribe")) {
-        summary += "\n\nEmail address to subscribe:\n" + answers.get("email");
+        summary += "\n\nEmail address to subscribe:\n    " + answers.get("email");
     } else {
-        summary += "\n\nReason not to subscribe:\n" + answers.get("reason");
+        summary += "\n\nReason not to subscribe:\n    " + answers.get("reason");
     }
-    summary += "\n\nPhone:\n" + answers.get("phone");
+    summary += "\n\nPhone:\n    " + answers.get("phone");
     summary += "\n\nMentioned user ids:";
     var mentions = answers.get("mentions");
     if(mentions != null) {
         for(var index in mentions) {
-            summary += "\n" + mentions[index];
+            summary += "\n    " + mentions[index];
         }
     } else {
         summary += "null";
@@ -273,8 +273,8 @@ var callbackFormFinished = function(response, answers) {
 // Format an group chat summary of the given answers
 var getGroupSummary = function(answers) {
     var summary = "Group chat to create:";
-    summary += "\n\nSubject:\n" + answers.get("subject");
-    summary += "\n\nAuto close:\n";
+    summary += "\n\nSubject:\n    " + answers.get("subject");
+    summary += "\n\nAuto close:\n    ";
     if(answers.get("autoClose")) {
         summary += "Yes";
     } else {
@@ -320,10 +320,11 @@ var callbackGroupFinished = function(response, answers) {
 // Format an invite summary of the given answers
 var getInviteSummary = function(answers) {
     var summary = "User to invite:";
-    summary += "\n\nName:\n";
+    summary += "\n\nName:\n    ";
     summary += Extra.capitalizeFirstLetter(answers.get("firstName"))
     summary += " " + Extra.capitalizeLastName(answers.get("lastName"));
-    summary += "\n\nSend invite to:\n";
+    summary += "\n\nInvite as:\n    " + answers.get("inviteType");
+    summary += "\n\nSend invite to:\n    ";
     if(answers.get("email") != null) {
         summary += answers.get("email");
     } else if(answers.get("phoneNumber") != null) {
