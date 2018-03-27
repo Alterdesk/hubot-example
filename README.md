@@ -74,8 +74,8 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
                • 'group' - Create a group chat
-               • 'invite' - Invite a user into a group chat"
-               • 'agreement' - Make an agreement with one or more users
+               • 'invite' - Invite a user into a group chat
+               • 'agreement' - Make an agreement with one or more users"
 ```
 
 ### Group chat
@@ -93,8 +93,8 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
                • 'group' - Create a group chat
-               • 'invite' - Invite a user into a group chat"
-               • 'agreement' - Make an agreement with one or more users
+               • 'invite' - Invite a user into a group chat
+               • 'agreement' - Make an agreement with one or more users"
 ```
 
 Once a questionnaire is started the bot does not need te be mentioned anymore by the user that started the 
@@ -144,8 +144,8 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
                • 'group' - Create a group chat
-               • 'invite' - Invite a user into a group chat"
-               • 'agreement' - Make an agreement with one or more users
+               • 'invite' - Invite a user into a group chat
+               • 'agreement' - Make an agreement with one or more users"
 ```
 
 ### Guided form
@@ -184,6 +184,9 @@ User << Bot: "Thank you, your answers were:
               
               Phone:
                   +3123456789
+                  
+              Attachments:
+                  image.png
               
               Mentioned user ids:
                   a37c725e-fe91-4033-a6ce-6a5a81eacba7"
