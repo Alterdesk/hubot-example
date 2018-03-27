@@ -75,6 +75,7 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'ping' - Ping me
                • 'group' - Create a group chat
                • 'invite' - Invite a user into a group chat"
+               • 'agreement' - Make an agreement with one or more users
 ```
 
 ### Group chat
@@ -93,6 +94,7 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'ping' - Ping me
                • 'group' - Create a group chat
                • 'invite' - Invite a user into a group chat"
+               • 'agreement' - Make an agreement with one or more users
 ```
 
 Once a questionnaire is started the bot does not need te be mentioned anymore by the user that started the 
@@ -143,6 +145,7 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'ping' - Ping me
                • 'group' - Create a group chat
                • 'invite' - Invite a user into a group chat"
+               • 'agreement' - Make an agreement with one or more users
 ```
 
 ### Guided form
@@ -161,6 +164,8 @@ User << Bot: "What is your email address? (Allowed domains: .com and .nl)"
 User >> Bot: "pietdegraaf@example.com"
 User << Bot: "What is your phone number? (Allowed country code +31)"
 User >> Bot: "+3123456789"
+User << Bot: "Can you send me one to three images? (JPG/PNG, 1KB-1MB)"
+User >> Bot: "(attachment image.png)"
 User << Bot: "Which users do you want to include? (Use '@' to sum up users)"
 User >> Bot: "@Harry de Boer"
 User << Bot: "Thank you, your answers were:
@@ -259,4 +264,35 @@ User << Bot: "Are you sure you want to send the invite? (Yes or no)"
 User >> Bot: "yes"
 User << Bot: "Your invite is being sent and corresponding group chat is created, one moment please"
 User << Bot: "Group chat created and user is invited in 'Group chat with Piet de Graaf'"
+```
+
+### Agreement
+You can ask one or more users to make an agreement with you, start the process by sending the command "agrreement".
+Mention the users you want to make the agreement with and send the agreement text. The bot will send a summary of the 
+agreement and asks you and the mentioned users to either accept or reject the agreement. When a user rejects the 
+agreement the process is stopped. If all users agree a pdf file is generated and sent in the chat. 
+```c
+User >> Bot: "agreement"
+User << Bot: "Hello Piet, with who do you want to make the agreement with? (Use '@' to sum up users)"
+User >> Bot: "@Harry de Boer"
+User << Bot: "What is the agreement?"
+User >> Bot: "That Harry will pay my lunch today"
+User << Bot: "Agreement details:
+              
+              Agreement:
+                  That Harry will pay my lunch today
+              
+              Mentioned users:
+                  Piet de Graaf (Alterdesk)
+                  Harry de Boer (Github)"
+User << Bot: "Do you agree with the agreement? (Accept or reject)"
+User >> Bot: "accept"
+User << Bot: "Piet de Graaf (Alterdesk) has accepted
+              
+              Waiting for:
+                  Harry de Boer (Github)"
+User >> Bot: "accept(Harry)"
+User << Bot: "Harry de Boer (Github) has accepted"
+User << Bot: "Agreement was reached, generating pdf"
+User << Bot: "Here is the agreement formatted as a pdf file(with attachment Agreement.pdf)"
 ```

@@ -22,7 +22,7 @@
 // Requirements
 var Messenger = require('node-messenger-sdk');
 var Extra = require('node-messenger-extra');
-const {Control, Listener, Answers, Flow} = require('hubot-questionnaire-framework');
+const {Control, Answers, Flow} = require('hubot-questionnaire-framework');
 
 // Messenger API instance
 var messengerApi;
@@ -36,6 +36,8 @@ var DELAY_PDF_CREATION_MS = 2000;
 // Regex
 var positiveRegex = new RegExp(/yes/, 'i');
 var negativeRegex = new RegExp(/no/, 'i');
+var acceptRegex = new RegExp(/accept/, 'i');
+var rejectRegex = new RegExp(/reject/, 'i');
 var coworkerRegex = new RegExp(/coworker/, 'i');
 var contactRegex = new RegExp(/contact/, 'i');
 var privateRegex = new RegExp(/private/, 'i');
@@ -77,6 +79,7 @@ module.exports = function(robot) {
     control.addAcceptedCommand("ping", "Ping me");
     control.addAcceptedCommand("group", "Create a group chat");
     control.addAcceptedCommand("invite", "Invite a user into a new group chat");
+    control.addAcceptedCommand("agreement", "Make an agreement with one or more users");
 
     // Override the default robot message receiver
     control.overrideReceiver(robot);
@@ -103,6 +106,10 @@ module.exports = function(robot) {
         .negative(negativeRegex, reasonFlow)
         .phone("phone", "What is your phone number? (Allowed country code +31)", "Invalid phone number.")
         .countryCodes(["+31"])
+        .attachment("attachments", "Can you send me one to three images? (JPG/PNG, 1KB-1MB)", "Invalid attachment or out of range.")
+        .count(1, 3)
+        .size(1024, 1048576)
+        .extensions([".jpg", ".jpeg", ".png"])
         .mention("mentions", "Which users do you want to include? (Use '@' to sum up users)", "Invalid mention.")
         .robotAllowed(!control.isUserInGroup(msg.message.user))
         .finish(callbackFormFinished)
@@ -142,61 +149,7 @@ module.exports = function(robot) {
         // Notify user of generating pdf
         msg.send("Generating pdf, one moment please")
 
-        // Delay PDF creation to include latest messages
-        setTimeout(function() {
-            // Create a PDF data instance
-            var pdfData = new Messenger.PdfData();
-
-            // Chat id to generate pdf from
-            pdfData.chatId = msg.message.room;
-            // If the chat is a group chat or a one-to-one chat
-            pdfData.isGroup = control.isUserInGroup(msg.message.user);
-            // Optional flag if chat auxiliary
-            pdfData.isAux = false;
-            // Starting date of generated pdf (null == last 30 days)
-            pdfData.startDate = null;
-            // Ending date of generated pdf (null == latest message)
-            pdfData.endDate = null;
-            // Filename of the downloaded pdf
-            pdfData.name = "Chat.pdf";
-
-            // Retrieve chat pdf download url
-            messengerApi.getChatPdfUrl(pdfData, function(success, json, cookie) {
-                console.log("Retrieve pdf download url successful: " + success);
-                if(json != null) {
-                    var url = json["link"];
-
-                    // Use url and cookie to download pdf
-                    messengerApi.download(url, pdfData.name, "application/pdf", cookie, function(downloaded, path) {
-                        if(downloaded) {
-                            console.log("pdf: Path: " + path);
-                            pdfData.path = path;
-
-                            // Upload the downloaded pdf file to the chat
-                            var messageData = new Messenger.SendMessageData();
-                            messageData.chatId = pdfData.chatId;
-                            messageData.message = "Here is the pdf you requested";
-                            messageData.addAttachmentPath(pdfData.path);
-                            messageData.isGroup = pdfData.isGroup;
-                            messageData.isAux = pdfData.isAux;
-                            messengerApi.sendMessage(messageData, function(success, json) {
-                                console.log("Send pdf successful: " + success);
-                                if(json != null) {
-                                    var messageId = json["id"];
-                                    console.log("Pdf message id: " + messageId);
-                                } else {
-                                    msg.send("Was unable to upload pdf to chat");
-                                }
-                            });
-                        } else {
-                            msg.send("Was unable to download pdf file");
-                        }
-                    });
-                } else {
-                    msg.send("Was unable to retrieve pdf file");
-                }
-            });
-        }, DELAY_PDF_CREATION_MS);
+        createAndSendPdf(msg, null, null, "Chat.pdf", "Here is the pdf you requested");
     }),
 
     // Example simple command that does not use the questionnaire
@@ -258,6 +211,49 @@ module.exports = function(robot) {
                 msg.send("Sorry you have no access to the invite command.");
             }
         });
+    }),
+
+    robot.hear(/agreement/i, function(msg) {
+        if(!control.isUserInGroup(msg.message.user)) {
+            msg.send("Making an agreement is only available in group chats");
+            return;
+        }
+        var date = Date.now();
+        var userId = control.getUserId(msg.message.user);
+
+        messengerApi.get("users/" + userId, function(success, json) {
+            if(success) {
+                var includeMentions = [];
+                includeMentions.push(json);
+
+                var answers = new Answers();
+                answers.add("userId", userId);
+                answers.add("chatId", msg.message.room);
+                answers.add("isGroup", true);
+                answers.add("isAux", false);
+                answers.add("start_date", date);
+                answers.add("user", json);
+
+                new Flow(control, "Stopped making an agreement", "An error occurred while making an agreement")
+                .mention("mentions", "With who do you want to make the agreement with? (Use '@' to sum up users)", "Invalid mention.")
+                .format(formatAgreementWhoQuestion)
+                .includeMentions(includeMentions)
+                .allAllowed(false)
+                .robotAllowed(false)
+                .text("agreement", "What is the agreement?", "Invalid answer.")
+                .summary(getAgreementSummary)
+                .polar("confirmed", "Do you agree with the agreement? (Accept or reject)", "Invalid confirmation.")
+                .positive(acceptRegex)
+                .negative(rejectRegex)
+                .askMentions("mentions")
+                .breakOnValue(false, false)
+                .multiUserSummary(getAgreementUsersSummary)
+                .finish(callbackAgreementFinished)
+                .start(msg, answers);
+            } else {
+                msg.send("An error occurred while making an agreement");
+            }
+        });
     })
 };
 
@@ -273,6 +269,13 @@ var callbackFormFinished = function(response, answers) {
         summary += "\n\nReason not to subscribe:\n    " + answers.get("reason");
     }
     summary += "\n\nPhone:\n    " + answers.get("phone");
+    summary += "\n\nAttachments:";
+    var attachments = answers.get("attachments");
+    if(attachments != null) {
+        for(var index in attachments) {
+            summary += "\n    " + attachments[index]["name"];
+        }
+    }
     summary += "\n\nMentioned users:";
     var mentions = answers.get("mentions");
     if(mentions != null) {
@@ -406,4 +409,152 @@ var callbackInviteFinished = function(response, answers) {
             response.send("Unable to invite user and/or create group chat");
         }
     });
+};
+
+var createAndSendPdf = function(response, startDate, endDate, fileName, messageText) {
+    // Delay PDF creation to include latest messages
+    setTimeout(function() {
+        // Create a PDF data instance
+        var pdfData = new Messenger.PdfData();
+
+        // Chat id to generate pdf from
+        pdfData.chatId = response.message.room;
+        // If the chat is a group chat or a one-to-one chat
+        pdfData.isGroup = control.isUserInGroup(response.message.user);
+        // Optional flag if chat auxiliary
+        pdfData.isAux = false;
+        // Starting date of generated pdf (null == last 30 days)
+        pdfData.startDate = startDate;
+        // Ending date of generated pdf (null == latest message)
+        pdfData.endDate = endDate;
+        // Filename of the downloaded pdf
+        pdfData.name = fileName;
+
+        // Retrieve chat pdf download url
+        messengerApi.getChatPdfUrl(pdfData, function(success, json, cookie) {
+            console.log("Retrieve pdf download url successful: " + success);
+            if(json != null) {
+                var url = json["link"];
+
+                // Use url and cookie to download pdf
+                messengerApi.download(url, pdfData.name, "application/pdf", cookie, function(downloaded, path) {
+                    if(downloaded) {
+                        console.log("pdf: Path: " + path);
+                        pdfData.path = path;
+
+                        // Upload the downloaded pdf file to the chat
+                        var messageData = new Messenger.SendMessageData();
+                        messageData.chatId = pdfData.chatId;
+                        messageData.message = messageText;
+                        messageData.addAttachmentPath(pdfData.path);
+                        messageData.isGroup = pdfData.isGroup;
+                        messageData.isAux = pdfData.isAux;
+                        messengerApi.sendMessage(messageData, function(success, json) {
+                            console.log("Send pdf successful: " + success);
+                            if(json != null) {
+                                var messageId = json["id"];
+                                console.log("Pdf message id: " + messageId);
+                            } else {
+                                response.send("Was unable to upload pdf to chat");
+                            }
+                        });
+                    } else {
+                        response.send("Was unable to download pdf file");
+                    }
+                });
+            } else {
+                response.send("Was unable to retrieve pdf file");
+            }
+        });
+    }, DELAY_PDF_CREATION_MS);
+};
+
+var formatAgreementWhoQuestion = function(answers) {
+    var user = answers.get("user");
+    var firstName = user["first_name"];
+    if(firstName != null) {
+        return "Hello " + firstName + ", with who do you want to make the agreement with? (Use '@' to sum up users)";
+    }
+    // Unable to format question, use default
+    return null;
+};
+
+// Format an agreement summary of the given answers
+var getAgreementSummary = function(answers) {
+    var summary = "Agreement details:";
+    summary += "\n\nAgreement:\n    " + answers.get("agreement");
+    summary += "\n\nMentioned users:";
+    var mentions = answers.get("mentions");
+    if(mentions != null) {
+        for(var index in mentions) {
+            summary += "\n    " + Extra.mentionToUserString(mentions[index]);
+        }
+    } else {
+        summary += "null";
+    }
+    return summary;
+};
+
+// Format an agreement user answer summary
+var getAgreementUsersSummary = function(answers, currentUserId, breaking) {
+    var summary = "";
+    var multiAnswers = answers.get("confirmed");
+    var mentions = answers.get("mentions");
+
+    // Show user that answered now
+    for(var index in mentions) {
+        var mention = mentions[index];
+        var userId = mention["id"];
+        if(userId === currentUserId) {
+            if(multiAnswers.get(currentUserId)) {
+                summary += Extra.mentionToUserString(mention) + " has accepted";
+            } else {
+                summary += Extra.mentionToUserString(mention) + " has rejected";
+            }
+            break;
+        }
+    }
+
+    // User answer value breaking multi user question
+    if(breaking) {
+       return summary;
+    }
+
+    // Show users that have not answered yet
+    var waitingFor = "";
+    for(var index in mentions) {
+        var mention = mentions[index];
+        var userId = mention["id"];
+        if(multiAnswers.get(userId) == null) {
+            waitingFor += "\n    " + Extra.mentionToUserString(mention);
+        }
+    }
+    if(waitingFor.length > 0) {
+        summary += "\n\nWaiting for:" + waitingFor;
+    }
+
+    return summary;
+};
+
+// Agreement flow finished callback
+var callbackAgreementFinished = function(response, answers) {
+    console.log("Finished:", answers);
+
+    var confirmedAnswers = answers.get("confirmed");
+    var keys = confirmedAnswers.keys();
+    var agreed = keys.length > 0;
+    for(var index in keys) {
+        var key = keys[index];
+        if(!confirmedAnswers.get(key)) {
+            agreed = false;
+            break;
+        }
+    }
+    if(agreed) {
+        response.send("Agreement was reached, generating pdf");
+        var startDate = answers.get("start_date");
+        createAndSendPdf(response, startDate, null, "Agreement.pdf", "Here is the agreement formatted as a pdf file");
+    } else {
+        response.send("Unable to reach an agreement");
+    }
 };
