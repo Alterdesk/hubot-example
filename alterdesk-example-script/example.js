@@ -236,7 +236,7 @@ module.exports = function(robot) {
 
                 new Flow(control, "Stopped making an agreement", "An error occurred while making an agreement")
                 .mention("mentions", "With who do you want to make the agreement with? (Use '@' to sum up users)", "Invalid mention.")
-                .format(formatAgreementWhoQuestion)
+                .formatQuestion(formatAgreementWhoQuestion)
                 .includeMentions(includeMentions)
                 .allAllowed(false)
                 .robotAllowed(false)
