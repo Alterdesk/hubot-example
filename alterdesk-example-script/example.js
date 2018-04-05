@@ -245,6 +245,7 @@ module.exports = function(robot) {
                 .polar("confirmed", "Do you agree with the agreement? (Accept or reject)", "Invalid confirmation.")
                 .positive(acceptRegex)
                 .negative(rejectRegex)
+                .timeout(600000)
                 .askMentions("mentions")
                 .breakOnValue(false, false)
                 .multiUserSummary(getAgreementUsersSummary)
