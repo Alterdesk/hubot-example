@@ -53,12 +53,12 @@ module.exports = function(robot) {
     control = new Control();
 
     // Override the stop regex to "abort" in addition to "stop"
-    control.setStopRegex(new RegExp(/stop|abort/, 'i'));
+    control.setStopRegex(new RegExp(/^[ \n\r\t]*(stop|abort)[ \n\r\t]*$/, 'gi'));
 
     // Override default hubot help command
     control.setCatchHelp(true);
     // Override the help regex to detect "what" and "support" in addition to "help"
-    control.setHelpRegex(/help|what|support/, 'i');
+    control.setHelpRegex(new RegExp(/^[ \n\r\t]*(help|what|support)[ \n\r\t]*$/, 'gi'))
     // Set the text to send when help was requested
     control.setCatchHelpText("Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:\n");
 
