@@ -34,13 +34,13 @@ var control;
 var DELAY_PDF_CREATION_MS = 2000;
 
 // Regex
-var positiveRegex = new RegExp(/yes/, 'i');
-var negativeRegex = new RegExp(/no/, 'i');
-var acceptRegex = new RegExp(/accept/, 'i');
-var rejectRegex = new RegExp(/reject/, 'i');
-var coworkerRegex = new RegExp(/coworker/, 'i');
-var contactRegex = new RegExp(/contact/, 'i');
-var privateRegex = new RegExp(/private/, 'i');
+var positiveRegex = new RegExp(/^[ \n\r\t]*yes[ \n\r\t]*$/, 'gi');
+var negativeRegex = new RegExp(/^[ \n\r\t]*no[ \n\r\t]*$/, 'gi');
+var acceptRegex = new RegExp(/^[ \n\r\t]*accept[ \n\r\t]*$/, 'gi');
+var rejectRegex = new RegExp(/^[ \n\r\t]*reject[ \n\r\t]*$/, 'gi');
+var coworkerRegex = new RegExp(/^[ \n\r\t]*coworker[ \n\r\t]*$/, 'gi');
+var contactRegex = new RegExp(/^[ \n\r\t]*contact[ \n\r\t]*$/, 'gi');
+var privateRegex = new RegExp(/^[ \n\r\t]*private[ \n\r\t]*$/, 'gi');
 
 module.exports = function(robot) {
 
