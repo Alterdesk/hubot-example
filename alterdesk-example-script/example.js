@@ -73,6 +73,10 @@ module.exports = function(robot) {
     // Set the text to send when an unknown command was heard
     control.setCatchAllText("I did not understand what you said, type \"help\" to see what I can do for you.");
 
+    control.setAuthenticatedCallback(function(user) {
+        console.log("Authenticated: " + user.id);
+    });
+
     control.setTypingCallback(function(userId, typing, chatId, isGroup) {
         console.log("Typing: " + typing + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
     });
@@ -106,12 +110,12 @@ module.exports = function(robot) {
         }, DELAY_NEW_CHAT_MESSAGE_MS);
     });
 
-    control.setRemovedFromChatCallback(function(chatId) {
-        console.log("Removed from chat: " + chatId);
+    control.setRemovedFromChatCallback(function(groupId) {
+        console.log("Removed from chat: " + groupId);
     });
 
-    control.setClosedChatCallback(function(chatId) {
-        console.log("Chat closed: " + chatId);
+    control.setClosedChatCallback(function(groupId) {
+        console.log("Chat closed: " + groupId);
     });
 
     control.setMessageLikedCallback(function(userId, messageId, chatId, isGroup) {
