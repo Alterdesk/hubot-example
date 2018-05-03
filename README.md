@@ -1,10 +1,10 @@
 # Alterdesk Example Hubot Chatbot
 
 A Hubot example using the following Alterdesk libraries
-* hubot-alterdesk-adapter
-* hubot-questionnaire-framework
-* node-messenger-sdk
-* node-messenger-extra
+* [hubot-alterdesk-adapter](https://github.com/Alterdesk/hubot-alterdesk-adapter)
+* [hubot-questionnaire-framework](https://github.com/Alterdesk/hubot-questionnaire-framework)
+* [node-messenger-sdk](https://github.com/Alterdesk/node-messenger-sdk)
+* [node-messenger-extra](https://github.com/Alterdesk/node-messenger-extra)
 
 ## Run the Hubot example
 
@@ -298,4 +298,16 @@ User >> Bot: "accept(Harry)"
 User << Bot: "Harry de Boer (Github) has accepted"
 User << Bot: "Agreement was reached, generating pdf"
 User << Bot: "Here is the agreement formatted as a pdf file(with attachment Agreement.pdf)"
+```
+
+## Events
+Hubot receives various messenger events via callbacks from the *hubot-questionnaire-framework*, you can trigger certain
+actions when an event is received, for example when the bot is added to a chat.
+```c
+// Added to a one-to-one chat
+User << Bot: "Welcome to the messenger!"
+
+// Added to a groupchat
+User << Bot: "Thank you for adding me to the group!"
+
 ```
