@@ -31,6 +31,7 @@ var messengerApi;
 var control;
 
 // Script configurations
+var DELAY_NEW_CHAT_MESSAGE_MS = 2000;
 var DELAY_PDF_CREATION_MS = 2000;
 
 // Regex
@@ -71,6 +72,74 @@ module.exports = function(robot) {
     control.setCatchAll(true);
     // Set the text to send when an unknown command was heard
     control.setCatchAllText("I did not understand what you said, type \"help\" to see what I can do for you.");
+
+    control.setAuthenticatedCallback(function(user) {
+        console.log("Authenticated: " + user.id);
+    });
+
+    control.setTypingCallback(function(userId, typing, chatId, isGroup) {
+        console.log("Typing: " + typing + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
+    });
+
+    control.setPresenceCallback(function(userId, status) {
+        console.log("Presence: user: " + userId + " status: " + status);
+    });
+
+    control.setNewChatCallback(function(chatId, isGroup) {
+        console.log("New chat: " + chatId + " isGroup: " + isGroup);
+
+        setTimeout(function() {
+            var messageData = new Messenger.SendMessageData();
+            if(isGroup) {
+                messageData.message = "Thank you for adding me to the group!";
+            } else {
+                messageData.message = "Welcome to the messenger!";
+            }
+            messageData.chatId = chatId;
+            messageData.isGroup = isGroup;
+            messageData.isAux = false;
+            messengerApi.sendMessage(messageData, function(success, json) {
+                console.log("Send new chat message successful: " + success);
+                if(json != null) {
+                    var messageId = json["id"];
+                    console.log("New chat message id: " + messageId);
+                } else {
+                    console.error("Unable to send new chat message");
+                }
+            });
+        }, DELAY_NEW_CHAT_MESSAGE_MS);
+    });
+
+    control.setRemovedFromChatCallback(function(groupId) {
+        console.log("Removed from chat: " + groupId);
+    });
+
+    control.setClosedChatCallback(function(groupId) {
+        console.log("Chat closed: " + groupId);
+    });
+
+    control.setMessageLikedCallback(function(userId, messageId, chatId, isGroup) {
+        console.log("Message liked: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
+    });
+
+    control.setMessageDeletedCallback(function(userId, messageId, chatId, isGroup) {
+        console.log("Message deleted: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
+    });
+
+    control.setGroupMemberCallback(function(groupId, added, userId, users) {
+        for(var index in users) {
+            var user = users[index];
+            if(added) {
+                console.log("Added in group: " + groupId + " userId: " + userId + " member: " + user.id);
+            } else {
+                console.log("Removed from group: " + groupId + " userId: " + userId + " member: " + user.id);
+            }
+        }
+    });
+
+    control.setGroupSubscribedCallback(function(groupId, subscribed) {
+        console.log("Subscribed: " + subscribed + " chat: " + groupId);
+    });
 
     // Mark these words as accepted commands
     control.addAcceptedCommand("form", "Fill in a form by using a questionnaire");
