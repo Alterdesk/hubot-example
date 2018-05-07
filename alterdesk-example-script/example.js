@@ -230,7 +230,7 @@ module.exports = function(robot) {
         // Optional check if user has permission to create a group
         var userId = control.getUserId(msg.message.user);
         console.log("Create group command started by user: " + userId);
-        messengerApi.checkPermission(userId, "coworkers", null, function(allowed) {
+        messengerApi.isCoworker(userId, robot.user, function(allowed) {
             if(allowed) {
                 var answers = new Answers();
                 answers.add("userId", userId);
@@ -257,7 +257,7 @@ module.exports = function(robot) {
         // Optional check if user has permission to invite a user
         var userId = control.getUserId(msg.message.user);
         console.log("Invite user command started by user: " + userId);
-        messengerApi.checkPermission(userId, "coworkers", null, function(allowed) {
+        messengerApi.isCoworker(userId, robot.user, function(allowed) {
             if(allowed) {
                 var answers = new Answers();
                 answers.add("userId", userId);
