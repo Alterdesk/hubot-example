@@ -3,6 +3,7 @@
 //
 // Dependencies:
 //   hubot-questionnaire-framework
+//   hubot-schedule-api
 //   node-messenger-sdk
 //   node-messenger-extra
 //
@@ -11,10 +12,14 @@
 //
 // Commands:
 //   hubot help                 - Print help of this bot
-//   hubot start                - Ask the user some questions
+//   hubot form                 - Fill in a form by using a questionnaire
 //   hubot photo                - Upload a photo in the current chat
 //   hubot pdf                  - Generate and upload a pdf in the current chat
 //   hubot ping                 - Ping the bot
+//   hubot group                - Create a group chat
+//   hubot invite               - Invite a user into a new group chat
+//   hubot agreement            - Make an agreement with one or more users
+//   hubot verify               - Verify your account with this bot
 //
 // Author:
 //   Alterdesk
@@ -23,12 +28,16 @@
 var Messenger = require('node-messenger-sdk');
 var Extra = require('node-messenger-extra');
 const {Control, Answers, Flow} = require('hubot-questionnaire-framework');
+const {Schedule} = require('hubot-schedule-api');
 
 // Messenger API instance
 var messengerApi;
 
 // Questionnaire control instance
 var control;
+
+// Schedule API instance
+var schedule;
 
 // Script configurations
 var DELAY_NEW_CHAT_MESSAGE_MS = 2000;
@@ -42,6 +51,10 @@ var rejectRegex = new RegExp(/^[ \n\r\t]*reject[ \n\r\t]*$/, 'gi');
 var coworkerRegex = new RegExp(/^[ \n\r\t]*coworker[ \n\r\t]*$/, 'gi');
 var contactRegex = new RegExp(/^[ \n\r\t]*contact[ \n\r\t]*$/, 'gi');
 var privateRegex = new RegExp(/^[ \n\r\t]*private[ \n\r\t]*$/, 'gi');
+var aRegex = new RegExp(/^[ \n\r\t]*a[ \n\r\t]*$/, 'gi');
+var bRegex = new RegExp(/^[ \n\r\t]*b[ \n\r\t]*$/, 'gi');
+var cRegex = new RegExp(/^[ \n\r\t]*c[ \n\r\t]*$/, 'gi');
+var dRegex = new RegExp(/^[ \n\r\t]*d[ \n\r\t]*$/, 'gi');
 
 module.exports = function(robot) {
 
@@ -53,13 +66,18 @@ module.exports = function(robot) {
     // Create a control instance
     control = new Control();
 
+    // Set the messenger api
+    control.setMessengerApi(messengerApi);
+
     // Override the stop regex to "abort" in addition to "stop"
     control.setStopRegex(new RegExp(/^[ \n\r\t]*(stop|abort)[ \n\r\t]*$/, 'gi'));
 
     // Override default hubot help command
     control.setCatchHelp(true);
     // Override the help regex to detect "what" and "support" in addition to "help"
-    control.setHelpRegex(new RegExp(/^[ \n\r\t]*(help|what|support)[ \n\r\t]*$/, 'gi'))
+    control.setHelpRegex(new RegExp(/^[ \n\r\t]*(help|what|support)[ \n\r\t]*$/, 'gi'));
+    // Set the question style for help buttons
+    control.setHelpQuestionStyle("horizontal");
     // Set the text to send when help was requested
     control.setCatchHelpText("Hello I am the Alterdesk Example Bot, here is a list of things I can do for you:\n");
 
@@ -72,6 +90,8 @@ module.exports = function(robot) {
     control.setCatchAll(true);
     // Set the text to send when an unknown command was heard
     control.setCatchAllText("I did not understand what you said, type \"help\" to see what I can do for you.");
+    // Add a help button to the unknown command message
+    control.setCatchAllButton("help", "Help", "green");
 
     control.setAuthenticatedCallback(function(user) {
         console.log("Authenticated: " + user.id);
@@ -98,6 +118,13 @@ module.exports = function(robot) {
             messageData.chatId = chatId;
             messageData.isGroup = isGroup;
             messageData.isAux = false;
+
+            var questionPayload = new Messenger.QuestionPayload();
+            questionPayload.multiAnswer = false;
+            questionPayload.style = "horizontal";
+            questionPayload.addOption("help", "Help", "green");
+            messageData.payload = questionPayload;
+
             messengerApi.sendMessage(messageData, function(success, json) {
                 console.log("Send new chat message successful: " + success);
                 if(json != null) {
@@ -126,6 +153,14 @@ module.exports = function(robot) {
         console.log("Message deleted: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
     });
 
+    control.setVerificationCallback(function(userId, messageId, chatId, isGroup, accepted) {
+        console.log("Verification: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup + " accepted: " + accepted);
+    });
+
+    control.setQuestionCallback(function(userId, messageId, chatId, isGroup, options) {
+        console.log("Question: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup + " options: " + options);
+    });
+
     control.setGroupMemberCallback(function(groupId, added, userId, users) {
         for(var index in users) {
             var user = users[index];
@@ -141,29 +176,107 @@ module.exports = function(robot) {
         console.log("Subscribed: " + subscribed + " chat: " + groupId);
     });
 
+    control.setUserAnsweredCallback(function(userId, answerKey, answerValue) {
+        console.log("User answered: userId: " + userId + " key: " + answerKey + " value: " + answerValue);
+    });
+
     // Mark these words as accepted commands
-    control.addAcceptedCommand("form", "Fill in a form by using a questionnaire");
-    control.addAcceptedCommand("photo", "Request a photo from me");
-    control.addAcceptedCommand("pdf", "Request a PDF chat log file from this chat");
-    control.addAcceptedCommand("ping", "Ping me");
-    control.addAcceptedCommand("group", "Create a group chat");
-    control.addAcceptedCommand("invite", "Invite a user into a new group chat");
-    control.addAcceptedCommand("agreement", "Make an agreement with one or more users");
+    control.addAcceptedCommand("form", "Fill in a form by using a questionnaire", "Form", "blue");
+    control.addAcceptedCommand("photo", "Request a photo from me", "Photo", "yellow");
+    control.addAcceptedCommand("pdf", "Request a PDF chat log file from this chat", "PDF", "red");
+    control.addAcceptedCommand("ping", "Ping me", "Ping", "purple");
+    control.addAcceptedCommand("group", "Create a group chat", "Group", "green");
+    control.addAcceptedCommand("invite", "Invite a user into a new group chat", "Invite", "black");
+    control.addAcceptedCommand("agreement", "Make an agreement with one or more users", "Agreement", "orange");
+    control.addAcceptedCommand("verify", "Verify your account with my help", "Verify", "theme");
 
     // Override the default robot message receiver
     control.overrideReceiver(robot);
 
+    schedule = new Schedule(robot);
+    schedule.setOverrideCallback("introduce", (chatId, isGroup, userId, answers) => {
+        var messageData = new Messenger.SendMessageData();
+        messageData.message = "Hi! I am the Example Alterdesk bot, press start to begin!";
+        messageData.chatId = chatId;
+        messageData.isGroup = isGroup;
+        messageData.isAux = false;
+
+        var questionPayload = new Messenger.QuestionPayload();
+        questionPayload.multiAnswer = false;
+        questionPayload.style = "horizontal";
+        questionPayload.addOption("form", "Start filling in form", "red");
+        questionPayload.addUserId(userId);
+        messageData.payload = questionPayload;
+
+        messengerApi.sendMessage(messageData, function(success, json) {
+            console.log("Send new chat message successful: " + success);
+            if(json != null) {
+                var messageId = json["id"];
+                console.log("New chat message id: " + messageId);
+            } else {
+                console.error("Unable to send new chat message");
+            }
+        });
+    });
+
+    schedule.setOverrideCallback("askHasTime", (chatId, isGroup, userId, answers) => {
+        var response = control.createHubotResponse(userId, chatId, isGroup);
+
+        new Flow(control, "Stopped asking", "Error while asking")
+        .polar("hasTime", "Do you have time to fill in a form?", "Invalid answer.")
+        .positive(positiveRegex, new Flow()
+            .info("OK great, let's get started!")
+            .text("postalCode", "What is your postal code?", "Invalid postal code.")
+            .text("street", "What is the name of your street?", "Invalid street.")
+            .number("houseNumber", "And what is your house number?", "Invalid number.")
+            .finish(callbackAddressFinished))
+        .positiveButton("yes", "Yes", "green")
+        .negative(negativeRegex, new Flow()
+            .info("That's too bad, I will ask you again tomorrow")
+            .action((response, answers, flowCallback) => {
+                schedule.scheduleEventInMs(chatId, isGroup, userId, "askHasTime", 30000);
+                flowCallback();
+            }))
+        .negativeButton("no", "No", "red")
+        .start(response);
+    });
+
     // Check if the form command was heard
     robot.hear(/form/i, function(msg) {
-        var emailFlow = new Flow(control);
-        emailFlow.email("email", "What is your email address? (Allowed domains: .com and .nl)", "Invalid email address.")
-        .domains([".com",".nl"]);
-
-        var reasonFlow = new Flow(control);
-        reasonFlow.text("reason", "Can you tell us why you don't want to subscribe?", "Invalid answer.")
-        .length(3);
-
+        var isGroup = control.isUserInGroup(msg.message.user);
         new Flow(control, "Stopped filling in form", "Error while filling in form")
+        .restartButton("form", "Restart filling in form", "blue")
+        .info("This is a demo form, it is quite long and you can stop it anytime by sending \"stop\", here we go!", 3000)
+        .multiple("color", "Select one or more colors that you like, and press send.", "Invalid choice.")
+        .option("red")
+        .button("red", "Red", "red")
+        .option("green")
+        .button("green", "Green", "green")
+        .option("orange")
+        .button("orange", "Orange", "orange")
+        .option("yellow")
+        .button("yellow", "Yellow", "yellow")
+        .option("purple")
+        .button("purple", "Purple", "purple")
+        .option("blue")
+        .button("blue", "Blue", "blue")
+        .option("black")
+        .button("black", "Black", "black")
+        .option("theme")
+        .button("theme", "Theme", "theme")
+        .questionStyle("horizontal")
+        .multiAnswer()
+        .multiple("mood", "How are you doing today?", "Invalid choice.")
+        .option(aRegex, null, 30)
+        .button("a", "A) Great", "green")
+        .option(bRegex, null, 20)
+        .button("b", "B) Fine", "green")
+        .option(cRegex, null, 10)
+        .button("c", "C) Not so great", "orange")
+        .option(dRegex, new Flow()
+            .text("why", "Care to share why?", "Invalid"), 0)
+        .button("d", "D) Bad", "red")
+        .questionStyle("vertical")
         .text("firstName", "Can you send me your first name?", "Invalid name.")
         .length(2, 100)
         .text("lastName", "Can you send me your last name?", "Invalid name.")
@@ -171,8 +284,16 @@ module.exports = function(robot) {
         .number("age", "How old are you? (Allowed range 12-90)", "Invalid number or out of range.")
         .range(12, 90)
         .polar("subscribe", "Do you want to subscribe to our newsletter? (Yes or no)", "Invalid answer.")
-        .positive(positiveRegex, emailFlow)
-        .negative(negativeRegex, reasonFlow)
+        .positive(positiveRegex, new Flow()
+            .email("email", "What is your email address? (Allowed domains: .com and .nl)", "Invalid email address.")
+            .domains([".com",".nl"]))
+        .positiveButton("yes" ,"Yes", "green")
+        .negative(negativeRegex, new Flow()
+            .text("reason", "Can you tell us why you don't want to subscribe?", "Invalid answer.")
+            .length(2))
+        .negativeButton("no", "No", "red")
+        .questionStyle("horizontal")
+        .info("Just a few more questions that require specific input.", 3000)
         .phone("phone", "What is your phone number? (Allowed country code +31)", "Invalid phone number.")
         .countryCodes(["+31"])
         .attachment("attachments", "Can you send me one to three images? (JPG/PNG, 1KB-1MB)", "Invalid attachment or out of range.")
@@ -180,7 +301,11 @@ module.exports = function(robot) {
         .size(1024, 1048576)
         .extensions([".jpg", ".jpeg", ".png"])
         .mention("mentions", "Which users do you want to include? (Use '@' to sum up users)", "Invalid mention.")
-        .robotAllowed(!control.isUserInGroup(msg.message.user))
+        .robotAllowed(!isGroup)
+        .allAllowed(isGroup)
+        .completeMentions()
+        .stopped((msg, answers) => {
+            console.log("Stopped filling in form, answered " + answers.size() + " questions.")})
         .finish(callbackFormFinished)
         .start(msg);
     }),
@@ -216,7 +341,7 @@ module.exports = function(robot) {
     // Check if the pdf command was heard
     robot.hear(/pdf/i, function(msg) {
         // Notify user of generating pdf
-        msg.send("Generating pdf, one moment please")
+        msg.send("Generating pdf, one moment please");
 
         createAndSendPdf(msg, null, null, "Chat.pdf", "Here is the pdf you requested");
     }),
@@ -236,15 +361,20 @@ module.exports = function(robot) {
                 answers.add("userId", userId);
 
                 new Flow(control, "Stopped creating group", "An error occurred while creating group")
+                .restartButton("group", "Restart creating group", "blue")
                 .text("subject", "What should the subject for the group be? (Accepted length 8-200)", "Invalid group chat subject.")
                 .length(8, 200)
                 .polar("autoClose", "Should the chat close automatically after a week of inactivity? (Yes or no)", "Invalid answer")
                 .positive(positiveRegex)
+                .positiveButton("yes" ,"Yes", "green")
                 .negative(negativeRegex)
+                .negativeButton("no", "No", "red")
                 .summary(getGroupSummary)
                 .polar("confirmed", "Are you sure you want to create the group? (Yes or no)", "Invalid confirmation.")
                 .positive(positiveRegex)
+                .positiveButton("yes" ,"Yes", "green")
                 .negative(negativeRegex)
+                .negativeButton("no", "No", "red")
                 .finish(callbackGroupFinished)
                 .start(msg, answers);
             } else {
@@ -262,18 +392,24 @@ module.exports = function(robot) {
                 var answers = new Answers();
                 answers.add("userId", userId);
 
-                new Flow(control, "Stopped inviting user", "An error occurred while inviting user")
+                new Flow(control, "Stopped inviting a user", "An error occurred while inviting user")
+                .restartButton("invite", "Restart inviting a user", "blue")
                 .text("firstName", "What is the first name of the user you want to invite?", "Invalid name.")
                 .text("lastName", "What is the last name?", "Invalid name.")
                 .multiple("inviteType", "Do you want to invite the user as a coworker, contact or private user?", "Invalid choice.")
                 .option(coworkerRegex)
+                .button("coworker", "Coworker", "black")
                 .option(contactRegex)
+                .button("contact", "Contact", "black")
                 .option(privateRegex)
+                .button("private", "Private", "black")
                 .email("email", "To which email address should the invite be sent?", "Invalid email address.")
                 .summary(getInviteSummary)
                 .polar("confirmed", "Are you sure you want to send the invite? (Yes or no)", "Invalid confirmation.")
                 .positive(positiveRegex)
+                .positiveButton("yes" ,"Yes", "green")
                 .negative(negativeRegex)
+                .negativeButton("no", "No", "red")
                 .finish(callbackInviteFinished)
                 .start(msg, answers);
             } else {
@@ -304,16 +440,20 @@ module.exports = function(robot) {
                 answers.add("user", json);
 
                 new Flow(control, "Stopped making an agreement", "An error occurred while making an agreement")
+                .restartButton("agreement", "Restart making an agreement", "blue")
                 .mention("mentions", "With who do you want to make the agreement with? (Use '@' to sum up users)", "Invalid mention.")
                 .formatQuestion(formatAgreementWhoQuestion)
                 .includeMentions(includeMentions)
-                .allAllowed(false)
+                .allAllowed(true)
                 .robotAllowed(false)
+                .completeMentions()
                 .text("agreement", "What is the agreement?", "Invalid answer.")
                 .summary(getAgreementSummary)
-                .polar("confirmed", "Do you agree with the agreement? (Accept or reject)", "Invalid confirmation.")
+                .polar("confirmed", "Do you agree with the agreement? (Accept or Reject)", "Invalid confirmation.")
                 .positive(acceptRegex)
+                .positiveButton("accept" ,"Accept", "green")
                 .negative(rejectRegex)
+                .negativeButton("reject", "Reject", "red")
                 .timeout(600000)
                 .askMentions("mentions")
                 .breakOnValue(false, false)
@@ -324,12 +464,43 @@ module.exports = function(robot) {
                 msg.send("An error occurred while making an agreement");
             }
         });
+    }),
+
+    robot.hear(/verify/i, function(msg) {
+        new Flow(control, "Stopped verifying", "An error occurred while verifying")
+        .restartButton("verify", "Restart verifying your account", "blue")
+        .polar("info", "Seems like you want to verify your account, do you want some information before we start?", "Invalid answer")
+        .positive(positiveRegex, new Flow()
+            .info("I will send you a verification request.", 3000)
+            .info("If you accept the request, you will be guided to the website of the identity provider.", 5000)
+            .info("When you are authenticated by the identity provider, your messenger account will be verified.", 5000)
+            .info("You can also choose to reject the request, but then your account will not get verified.", 5000)
+            .info("I am going to send you the verification request now.", 2000))
+        .positiveButton("yes" ,"Yes", "green")
+        .negative(negativeRegex)
+        .negativeButton("no", "No", "red")
+        .verification("verification", "idensys")
+        .verified(new Flow()
+            .info("Great! Your account is now verified!"))
+        .unverified(new Flow()
+            .info("It seems you rejected the request, too bad"))
+        .start(msg);
     })
+};
+
+var callbackAddressFinished = function(response, answers) {
+    var summary = "Thank you, your package will be sent to:";
+    summary += "\n\nPostal code:\n    " + answers.get("postalCode");
+    summary += "\n\nStreet name::\n    " + Extra.capitalizeLastName(answers.get("street"));
+    summary += "\n\nHouse number:\n    " + answers.get("houseNumber");
+    response.send(summary);
 };
 
 // Filling in form flow finished callback
 var callbackFormFinished = function(response, answers) {
     var summary = "Thank you, your answers were:";
+    summary += "\n\nColors you like:\n    " + answers.get("color");
+    summary += "\n\nMood score:\n    " + answers.get("mood");
     summary += "\n\nFirst name:\n    " + Extra.capitalizeFirstLetter(answers.get("firstName"));
     summary += "\n\nLast name:\n    " + Extra.capitalizeLastName(answers.get("lastName"));
     summary += "\n\nAge:\n    " + answers.get("age");

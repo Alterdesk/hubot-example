@@ -1,11 +1,12 @@
 # Alterdesk Example Hubot Chatbot
 
 A Hubot example using the following Alterdesk libraries
-* [hubot-alterdesk-adapter](https://github.com/Alterdesk/hubot-alterdesk-adapter)
-* [hubot-questionnaire-framework](https://github.com/Alterdesk/hubot-questionnaire-framework)
-* [node-messenger-sdk](https://github.com/Alterdesk/node-messenger-sdk)
-* [node-messenger-extra](https://github.com/Alterdesk/node-messenger-extra)
-
+* [hubot-alterdesk-adapter](https://github.com/Alterdesk/hubot-alterdesk-adapter) - Real time connection with the messenger
+* [hubot-schedule-api](https://github.com/Alterdesk/hubot-schedule-api) - REST API and scheduling
+* [hubot-questionnaire-framework](https://github.com/Alterdesk/hubot-questionnaire-framework) - Flow of questions and extras
+* [node-messenger-sdk](https://github.com/Alterdesk/node-messenger-sdk) - Perform messenger API calls
+* [node-messenger-extra](https://github.com/Alterdesk/node-messenger-extra) - Library with helper functions and regex
+    
 ## Run the Hubot example
 
 ### Unix
@@ -74,14 +75,16 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
                • 'group' - Create a group chat
-               • 'invite' - Invite a user into a group chat
-               • 'agreement' - Make an agreement with one or more users"
+               • 'invite' - Invite a user into a new group chat
+               • 'agreement' - Make an agreement with one or more users
+               • 'verify' - Verify your account with my help
 ```
 
 ### Group chat
-When sending messages to the bot in a group chat, the bot will only listen and respond when mentioned
+If the environment variable HUBOT_QUESTIONNAIRE_NEED_MENTION_IN_GROUP is enabled (disabled by default), you will need to
+mention the bot in a group chat before it will listen and trigger a command. One-to-one chats are not affected.
 ```c
-// Not mentioning the bot in a group will trigger no response
+// With this setting, not mentioning the bot in a group will trigger no response
 User >> Bot: "help"
 
 // Message directed at bot, will respond
@@ -93,15 +96,16 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
                • 'group' - Create a group chat
-               • 'invite' - Invite a user into a group chat
-               • 'agreement' - Make an agreement with one or more users"
+               • 'invite' - Invite a user into a new group chat
+               • 'agreement' - Make an agreement with one or more users
+               • 'verify' - Verify your account with my help
 ```
 
 Once a questionnaire is started the bot does not need te be mentioned anymore by the user that started the 
-questionniare, the bot keeps listening until the questionnaire is finished or waiting for a user response times out.
+questionnaire, the bot keeps listening until the questionnaire is finished or waiting for a user response times out.
 ```c
 // Start the questionnaire
-User >> Bot: "@<BOT_USERNAME> form"
+User >> Bot: "form"
 // Bot was triggered for first question
 User << Bot: "Can you send me your first name?"
 // User responds without mentioning the bot
@@ -126,7 +130,7 @@ User << Bot: "Stopped the questionnaire"
 When you send the bot a command that it does not recognize(not one of the accpeted commands) it will reply that the bot
 did not understand you. This behaviour is enabled/disabled with setCatchAll() in the Questionnaire Control object.
 ```c
-User >> Bot: "@<BOT_USERNAME> unknown"
+User >> Bot: "unknown"
 User << Bot: "I did not understand what you said, type 'help' to see what I can do for you."
 ```
 
@@ -144,14 +148,20 @@ User << Bot: "Hello I am the Alterdesk Example Bot, here is a list of things I c
                • 'pdf' - Request a PDF chat log file from this chat
                • 'ping' - Ping me
                • 'group' - Create a group chat
-               • 'invite' - Invite a user into a group chat
-               • 'agreement' - Make an agreement with one or more users"
+               • 'invite' - Invite a user into a new group chat
+               • 'agreement' - Make an agreement with one or more users
+               • 'verify' - Verify your account with my help
 ```
 
 ### Guided form
 Sending "form" to the bot will trigger a guided form to fill in
 ```c
 User >> Bot: "form"
+User << Bot: "This is a demo form, it is quite long and you can stop it anytime by sending "stop", here we go!"
+User << Bot: "Select one or more colors that you like, and press send."
+User >> Bot: "red|blue"
+User << Bot: "How are you doing today?"
+User >> Bot: "a"
 User << Bot: "Can you send me your first name?"
 User >> Bot: "piet"
 User << Bot: "Can you send me your last name?"
@@ -162,6 +172,7 @@ User << Bot: "Do you want to subscribe to our newsletter? (Yes or no)"
 User >> Bot: "yes"
 User << Bot: "What is your email address? (Allowed domains: .com and .nl)"
 User >> Bot: "pietdegraaf@example.com"
+User << Bot: "Just a few more questions that require specific input."
 User << Bot: "What is your phone number? (Allowed country code +31)"
 User >> Bot: "+3123456789"
 User << Bot: "Can you send me one to three images? (JPG/PNG, 1KB-1MB)"
@@ -225,7 +236,7 @@ User >> Bot: "group"
 User << Bot: "What should the subject for the group be?"
 User >> Bot: "My new group"
 User << Bot: "Should the chat close automatically after a week of inactivity? (Yes or no)"
-User >> Bot: "My new group"
+User >> Bot: "no"
 User << Bot: "Group chat to create:
               
               Subject:
@@ -300,6 +311,23 @@ User << Bot: "Agreement was reached, generating pdf"
 User << Bot: "Here is the agreement formatted as a pdf file(with attachment Agreement.pdf)"
 ```
 
+### Verify
+The bot can also help you to verify your messenger account. If you want the bot can also send you some information about
+ the verification process.
+```c
+User >> Bot: "verify"
+User << Bot: "Seems like you want to verify your account, do you want some information before we start?"
+User >> Bot: "yes"
+User << Bot: "I will send you a verification request."
+User << Bot: "If you accept the request, you will be guided to the website of the identity provider."
+User << Bot: "When you are authenticated by the identity provider, your messenger account will be verified."
+User << Bot: "You can also choose to reject the request, but then your account will not get verified."
+User << Bot: "I am going to send you the verification request now."
+User << Bot: "Example Bot asked you to verify your account by means of 'Idensys'."
+User >> Bot: "accept"
+User << Bot: "Great! Your account is now verified!"
+```
+
 ## Events
 Hubot receives various messenger events via callbacks from the *hubot-questionnaire-framework*, you can trigger certain
 actions when an event is received, for example when the bot is added to a chat.
@@ -309,5 +337,41 @@ User << Bot: "Welcome to the messenger!"
 
 // Added to a groupchat
 User << Bot: "Thank you for adding me to the group!"
+```
 
+## Hidden commands
+Using the [hubot-schedule-api](https://github.com/Alterdesk/hubot-schedule-api), a REST API is added to the Hubot
+instance. Using the setOverrideCallback() function, a hidden command can be added that can only be triggered from the 
+Hubot API.
+
+### Introduce
+By sending the "introduce" command, the bot will introduce himself and provide an easy button to start the "flow" 
+command. This command can not be triggered by sending "introduce" as a text message to the bot as usual.
+```c
+// Introduce command trigger on the REST API
+User << Bot: "Hi! I am the Example Alterdesk bot, press start to begin!"
+```
+
+### Ask if the user has time
+With the "askHasTime" command, you can ask if the user has time to fill in a form. If the user has time, the flow is
+started. When the user does not have the time, the bot schedules the same command with the optional pre-filled answers 
+for a later time(bot says tomorrow, using 5 minutes for demo purposes).
+
+When a user has the time:
+```c
+// Ask command trigger on the REST API
+User << Bot: "Do you have time to fill in a form?"
+User >> Bot: "yes"
+User << Bot: "OK great, let's get started!"
+```
+
+When a user does not ave the time:
+```c
+// Ask command trigger on the REST API
+User << Bot: "Do you have time to fill in a form?"
+User >> Bot: "no"
+User << Bot: "That's too bad, I will ask you again tomorrow"
+
+// Ask command trigger on scheduled time
+User << Bot: "Do you have time to fill in a form?"
 ```
