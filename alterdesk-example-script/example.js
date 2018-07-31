@@ -72,6 +72,9 @@ module.exports = function(robot) {
     // Override the stop regex to "abort" in addition to "stop"
     control.setStopRegex(new RegExp(/^[ \n\r\t]*(stop|abort)[ \n\r\t]*$/, 'gi'));
 
+    // Set message text to send when the back command is used
+    control.setFlowBackText("OK, going back...");
+
     // Override default hubot help command
     control.setCatchHelp(true);
     // Override the help regex to detect "what" and "support" in addition to "help"
@@ -279,8 +282,10 @@ module.exports = function(robot) {
         .questionStyle("vertical")
         .text("firstName", "Can you send me your first name?", "Invalid name.")
         .length(2, 100)
+        .capitalize()
         .text("lastName", "Can you send me your last name?", "Invalid name.")
         .length(2, 100)
+        .lastName()
         .number("age", "How old are you? (Allowed range 12-90)", "Invalid number or out of range.")
         .range(12, 90)
         .polar("subscribe", "Do you want to subscribe to our newsletter? (Yes or no)", "Invalid answer.")
