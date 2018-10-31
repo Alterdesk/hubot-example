@@ -160,10 +160,6 @@ module.exports = function(robot) {
         console.log("Verification: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup + " accepted: " + accepted);
     });
 
-    control.setQuestionCallback(function(userId, messageId, chatId, isGroup, options) {
-        console.log("Question: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup + " options: " + options);
-    });
-
     control.setGroupMemberCallback(function(groupId, added, userId, users) {
         for(var index in users) {
             var user = users[index];
@@ -179,8 +175,8 @@ module.exports = function(robot) {
         console.log("Subscribed: " + subscribed + " chat: " + groupId);
     });
 
-    control.setUserAnsweredCallback(function(userId, answerKey, answerValue) {
-        console.log("User answered: userId: " + userId + " key: " + answerKey + " value: " + answerValue);
+    control.setQuestionAnsweredCallback(function(userId, answerKey, answers) {
+        console.log("Question answered: " + userId + " key: " + answerKey + " value: " + answers.get(answerKey));
     });
 
     // Mark these words as accepted commands
@@ -269,6 +265,18 @@ module.exports = function(robot) {
         .button("theme", "Theme", "theme")
         .questionStyle("horizontal")
         .multiAnswer()
+        .multiple("rating", "How many stars would you rate our service? (from 1 to 5)", "Invalid rating.")
+        .option("5")
+        .button("5", "★★★★★")
+        .option("4")
+        .button("4", "★★★★☆")
+        .option("3")
+        .button("3", "★★★☆☆")
+        .option("2")
+        .button("2", "★★☆☆☆")
+        .option("1")
+        .button("1", "★☆☆☆☆")
+        .questionStyle("horizontal")
         .multiple("mood", "How are you doing today?", "Invalid choice.")
         .option(aRegex, null, 30)
         .button("a", "A) Great", "green")
@@ -484,7 +492,7 @@ module.exports = function(robot) {
         .positiveButton("yes" ,"Yes", "green")
         .negative(negativeRegex)
         .negativeButton("no", "No", "red")
-        .verification("verification", "idensys")
+        .verification("verification", "alterwaves", true)
         .verified(new Flow()
             .info("Great! Your account is now verified!"))
         .unverified(new Flow()
