@@ -492,7 +492,7 @@ module.exports = function(robot) {
         .positiveButton("yes" ,"Yes", "green")
         .negative(negativeRegex)
         .negativeButton("no", "No", "red")
-        .verification("verification", "alterwaves", true)
+        .verification("verification", "idensys", true)
         .verified(new Flow()
             .info("Great! Your account is now verified!"))
         .unverified(new Flow()
