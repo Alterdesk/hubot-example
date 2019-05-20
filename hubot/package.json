@@ -5,9 +5,9 @@
   "author": "developer@alterdesk.com",
   "description": "Example Hubot instance for Alterdesk libraries",
   "dependencies": {
-    "alterdesk-example-script": "../alterdesk-example-script",
-    "hubot-alterdesk": "https://github.com/Alterdesk/hubot-alterdesk-adapter.git",
-    "hubot": "^2.19.0"
+    "alterdesk-example-script": "file:../alterdesk-example-script",
+    "hubot": "^2.19.0",
+    "hubot-alterdesk": "https://github.com/Alterdesk/hubot-alterdesk-adapter.git"
   },
   "engines": {
     "node": "0.10.x"
