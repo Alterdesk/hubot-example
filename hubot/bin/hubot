@@ -1,39 +1,30 @@
 #!/bin/sh
 
 set -e
-
-npm install
-npm install ../alterdesk-example-script
-
 export PATH="node_modules/.bin:node_modules/hubot/node_modules/.bin:$PATH"
 
 # Set your OAuth 2.0 API token for Alterdesk here
-export NODE_ALTERDESK_TOKEN=
+export HUBOT_ALTERDESK_TOKEN=
 
 # Alterdesk API
-export NODE_ALTERDESK_TRANSPORT=https
-export NODE_ALTERDESK_DOMAIN=api.alterdesk.com
-export NODE_ALTERDESK_PORT=443
-export NODE_ALTERDESK_VERSION=v1
+export HUBOT_ALTERDESK_HOST=api.alterdesk.com:443
+export HUBOT_ALTERDESK_URL=https://api.alterdesk.com/v1/
+export HUBOT_ALTERDESK_PORT=443
 
-# Alterdesk adapter settings
-export HUBOT_ALTERDESK_TOKEN=$NODE_ALTERDESK_TOKEN
-export HUBOT_ALTERDESK_HOST=$NODE_ALTERDESK_DOMAIN:$NODE_ALTERDESK_PORT
-
-# Question times out after a minute
+# Question times out after 5 minutes
 export HUBOT_QUESTIONNAIRE_RESPONSE_TIMEOUT=300000
 
 # Shorter bot typing delay
 export HUBOT_ALTERDESK_TYPING_DELAY=500
-#export HUBOT_ALTERDESK_TYPING_DELAY_FACTOR=25
-#export HUBOT_ALTERDESK_TYPING_DELAY_MIN=250
-#export HUBOT_ALTERDESK_TYPING_DELAY_MAX=2500
 
-# Adapter does not force bot name prefix
-export HUBOT_ALTERDESK_PM_PREFIX=0
+# Logger settings
+export NODE_MESSENGER_LOG_TIMESTAMP=1
+export NODE_MESSENGER_LOG_COLORS=1
+export NODE_MESSENGER_LOG_TRUNCATE_STRING=1000
 
-# Set command and control token
-export HUBOT_SCHEDULE_API_TOKEN=MY_UUID_TOKEN
+# Enable bot api and set token
+export HUBOT_USE_API=1
+export HUBOT_API_TOKEN=MY_UUID_TOKEN
 
 # Hubot debug log level
 export HUBOT_LOG_LEVEL=debug
