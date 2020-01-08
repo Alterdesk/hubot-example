@@ -7,11 +7,5 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Alterdesk",
-  "license": "MIT",
-  "dependencies": {
-    "hubot-questionnaire-framework": "https://github.com/Alterdesk/hubot-questionnaire-framework.git",
-    "node-messenger-sdk": "https://github.com/Alterdesk/node-messenger-sdk.git",
-    "hubot-schedule-api": "https://github.com/Alterdesk/hubot-schedule-api.git",
-    "node-messenger-extra": "https://github.com/Alterdesk/node-messenger-extra.git"
-  }
+  "license": "MIT"
 }

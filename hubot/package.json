@@ -6,8 +6,9 @@
   "description": "Example Hubot instance for Alterdesk libraries",
   "dependencies": {
     "alterdesk-example-script": "file:../alterdesk-example-script",
-    "hubot": "^2.19.0",
-    "hubot-alterdesk": "https://github.com/Alterdesk/hubot-alterdesk-adapter.git"
+    "hubot": "^3.3.2",
+    "hubot-alterdesk": "https://github.com/Alterdesk/hubot-alterdesk-adapter.git",
+    "hubot-questionnaire-framework": "https://github.com/Alterdesk/hubot-questionnaire-framework.git"
   },
   "engines": {
     "node": "0.10.x"
