@@ -25,19 +25,13 @@
 //   Alterdesk
 
 // Requirements
-var Messenger = require('node-messenger-sdk');
-var Extra = require('node-messenger-extra');
-const {Control, Answers, Flow} = require('hubot-questionnaire-framework');
-const {Schedule} = require('hubot-schedule-api');
+const {Action, Answers, AnswerValue, ChatPdfAction, ChatTools, CheckUserAction, Control, CreateGroupAction, CreateGroupData, Flow, SendMessageData, StringTools, RegexTools, ReplaceAnswerFormatter} = require('./../hubot/node_modules/hubot-questionnaire-framework');
+const Logger = require('./../hubot/node_modules/node-messenger-log');
 
-// Messenger API instance
-var messengerApi;
+const logger = new Logger(process.env.HUBOT_LOG_LEVEL || 'debug');
 
 // Questionnaire control instance
 var control;
-
-// Schedule API instance
-var schedule;
 
 // Script configurations
 var DELAY_NEW_CHAT_MESSAGE_MS = 2000;
@@ -56,18 +50,10 @@ var bRegex = new RegExp(/^[ \n\r\t]*b[ \n\r\t]*$/, 'gi');
 var cRegex = new RegExp(/^[ \n\r\t]*c[ \n\r\t]*$/, 'gi');
 var dRegex = new RegExp(/^[ \n\r\t]*d[ \n\r\t]*$/, 'gi');
 
-module.exports = function(robot) {
-
-    // Initialize messenger api
-    messengerApi = new Messenger.Api();
-    // Configure instance with defaults
-    messengerApi.configure();
+module.exports = (robot) => {
 
     // Create a control instance
     control = new Control();
-
-    // Set the messenger api
-    control.setMessengerApi(messengerApi);
 
     // Override the stop regex to "abort" in addition to "stop"
     control.setStopRegex(new RegExp(/^[ \n\r\t]*(stop|abort)[ \n\r\t]*$/, 'gi'));
@@ -96,87 +82,77 @@ module.exports = function(robot) {
     // Add a help button to the unknown command message
     control.setCatchAllButton("help", "Help", "green");
 
-    control.setAuthenticatedCallback(function(user) {
-        console.log("Authenticated: " + user.id);
+    control.setAuthenticatedCallback((user) => {
+        logger.debug("Authenticated: " + user.id);
     });
 
-    control.setTypingCallback(function(userId, typing, chatId, isGroup) {
-        console.log("Typing: " + typing + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
+    control.setTypingCallback((userId, typing, chatId, isGroup) => {
+        logger.debug("Typing: " + typing + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
     });
 
-    control.setPresenceCallback(function(userId, status) {
-        console.log("Presence: user: " + userId + " status: " + status);
+    control.setPresenceCallback((userId, status) => {
+        logger.debug("Presence: user: " + userId + " status: " + status);
     });
 
-    control.setNewChatCallback(function(chatId, isGroup) {
-        console.log("New chat: " + chatId + " isGroup: " + isGroup);
+    control.setNewChatCallback((chatId, isGroup) => {
+        logger.debug("New chat: " + chatId + " isGroup: " + isGroup);
 
-        setTimeout(function() {
-            var messageData = new Messenger.SendMessageData();
+        setTimeout(async () => {
+            var messageData = new SendMessageData();
             if(isGroup) {
-                messageData.message = "Thank you for adding me to the group!";
+                messageData.setMessage("Thank you for adding me to the group!");
             } else {
-                messageData.message = "Welcome to the messenger!";
+                messageData.setMessage("Welcome to the messenger!");
             }
-            messageData.chatId = chatId;
-            messageData.isGroup = isGroup;
-            messageData.isAux = false;
+            messageData.setChat(chatId, isGroup, false);
+            messageData.setRequestOptions(false, "horizontal");
+            messageData.addQuestionButton("Help", "green");
 
-            var questionPayload = new Messenger.QuestionPayload();
-            questionPayload.multiAnswer = false;
-            questionPayload.style = "horizontal";
-            questionPayload.addOption("help", "Help", "green");
-            messageData.payload = questionPayload;
-
-            messengerApi.sendMessage(messageData, function(success, json) {
-                console.log("Send new chat message successful: " + success);
-                if(json != null) {
-                    var messageId = json["id"];
-                    console.log("New chat message id: " + messageId);
-                } else {
-                    console.error("Unable to send new chat message");
-                }
-            });
+            var success = await control.messengerClient.sendMessage(messageData);
+            logger.debug("Send new chat message successful: " + success);
+            if(!success) {
+                logger.error("Unable to send new chat message");
+            }
         }, DELAY_NEW_CHAT_MESSAGE_MS);
     });
 
-    control.setRemovedFromChatCallback(function(groupId) {
-        console.log("Removed from chat: " + groupId);
+    control.setRemovedFromChatCallback((groupId) => {
+        logger.debug("Removed from chat: " + groupId);
     });
 
-    control.setClosedChatCallback(function(groupId) {
-        console.log("Chat closed: " + groupId);
+    control.setClosedChatCallback((groupId) => {
+        logger.debug("Chat closed: " + groupId);
     });
 
-    control.setMessageLikedCallback(function(userId, messageId, chatId, isGroup) {
-        console.log("Message liked: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
+    control.setMessageLikedCallback((userId, messageId, chatId, isGroup) => {
+        logger.debug("Message liked: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
     });
 
-    control.setMessageDeletedCallback(function(userId, messageId, chatId, isGroup) {
-        console.log("Message deleted: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
+    control.setMessageDeletedCallback((userId, messageId, chatId, isGroup) => {
+        logger.debug("Message deleted: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup);
     });
 
-    control.setVerificationCallback(function(userId, messageId, chatId, isGroup, accepted) {
-        console.log("Verification: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup + " accepted: " + accepted);
+    control.setVerificationCallback((userId, messageId, chatId, isGroup, accepted) => {
+        logger.debug("Verification: id: " + messageId + " user: " + userId + " chat: " + chatId + " isGroup: " + isGroup + " accepted: " + accepted);
     });
 
-    control.setGroupMemberCallback(function(groupId, added, userId, users) {
+    control.setGroupMemberCallback((groupId, added, userId, users) => {
         for(var index in users) {
             var user = users[index];
             if(added) {
-                console.log("Added in group: " + groupId + " userId: " + userId + " member: " + user.id);
+                logger.debug("Added in group: " + groupId + " userId: " + userId + " member: " + user.id);
             } else {
-                console.log("Removed from group: " + groupId + " userId: " + userId + " member: " + user.id);
+                logger.debug("Removed from group: " + groupId + " userId: " + userId + " member: " + user.id);
             }
         }
     });
 
-    control.setGroupSubscribedCallback(function(groupId, subscribed) {
-        console.log("Subscribed: " + subscribed + " chat: " + groupId);
+    control.setGroupSubscribedCallback((groupId, subscribed) => {
+        logger.debug("Subscribed: " + subscribed + " chat: " + groupId);
     });
 
-    control.setQuestionAnsweredCallback(function(userId, answerKey, answers) {
-        console.log("Question answered: " + userId + " key: " + answerKey + " value: " + answers.get(answerKey));
+    control.setQuestionAnsweredCallback((userId, answerKey, answerValue, answers, question) => {
+        logger.debug("Question answered: " + userId + " key: " + answerKey + " value: " + answerValue);
     });
 
     // Mark these words as accepted commands
@@ -192,33 +168,21 @@ module.exports = function(robot) {
     // Override the default robot message receiver
     control.overrideReceiver(robot);
 
-    schedule = new Schedule(robot);
-    schedule.setOverrideCallback("introduce", (chatId, isGroup, userId, answers) => {
-        var messageData = new Messenger.SendMessageData();
-        messageData.message = "Hi! I am the Example Alterdesk bot, press start to begin!";
-        messageData.chatId = chatId;
-        messageData.isGroup = isGroup;
-        messageData.isAux = false;
+    control.botApi.setOverrideCallback("introduce", async (chatId, isGroup, userId, answers) => {
+        var messageData = new SendMessageData();
+        messageData.setMessage("Hi! I am the Example Alterdesk bot, press start to begin!");
+        messageData.setChat(chatId, isGroup, false);
+        messageData.setRequestOptions(false, "horizontal");
+        messageData.addQuestionButtonWithName("form", "Start filling in form", "red");
 
-        var questionPayload = new Messenger.QuestionPayload();
-        questionPayload.multiAnswer = false;
-        questionPayload.style = "horizontal";
-        questionPayload.addOption("form", "Start filling in form", "red");
-        questionPayload.addUserId(userId);
-        messageData.payload = questionPayload;
-
-        messengerApi.sendMessage(messageData, function(success, json) {
-            console.log("Send new chat message successful: " + success);
-            if(json != null) {
-                var messageId = json["id"];
-                console.log("New chat message id: " + messageId);
-            } else {
-                console.error("Unable to send new chat message");
-            }
-        });
+        var success = await control.messengerClient.sendMessage(messageData);
+        logger.debug("Send introduction message successful: " + success);
+        if(!success) {
+            logger.error("Unable to send new chat message");
+        }
     });
 
-    schedule.setOverrideCallback("askHasTime", (chatId, isGroup, userId, answers) => {
+    control.botApi.setOverrideCallback("askHasTime", (chatId, isGroup, userId, answers) => {
         var response = control.createHubotResponse(userId, chatId, isGroup);
 
         new Flow(control, "Stopped asking", "Error while asking")
@@ -233,7 +197,7 @@ module.exports = function(robot) {
         .negative(negativeRegex, new Flow()
             .info("That's too bad, I will ask you again tomorrow")
             .action((response, answers, flowCallback) => {
-                schedule.scheduleEventInMs(chatId, isGroup, userId, "askHasTime", 30000);
+                control.botApi.scheduleEventInMs(chatId, isGroup, userId, "askHasTime", 30000);
                 flowCallback();
             }))
         .negativeButton("no", "No", "red")
@@ -241,8 +205,8 @@ module.exports = function(robot) {
     });
 
     // Check if the form command was heard
-    robot.hear(/form/i, function(msg) {
-        var isGroup = control.isUserInGroup(msg.message.user);
+    robot.hear(RegexTools.getStartCommandRegex("form"), (msg) => {
+        var isGroup = ChatTools.isUserInGroup(msg.message.user);
         new Flow(control, "Stopped filling in form", "Error while filling in form")
         .restartButton("form", "Restart filling in form", "blue")
         .info("This is a demo form, it is quite long and you can stop it anytime by sending \"stop\", here we go!", 3000)
@@ -318,168 +282,211 @@ module.exports = function(robot) {
         .allAllowed(isGroup)
         .completeMentions()
         .stopped((msg, answers) => {
-            console.log("Stopped filling in form, answered " + answers.size() + " questions.")})
+            logger.debug("Stopped filling in form, answered " + answers.size() + " questions.")})
         .finish(callbackFormFinished)
         .start(msg);
     }),
 
     // Check if the photo command was heard
-    robot.hear(/photo/i, function(msg) {
+    robot.hear(RegexTools.getStartCommandRegex("photo"), async (msg) => {
         // Create a message data instance
-        var messageData = new Messenger.SendMessageData();
+        var messageData = new SendMessageData();
 
         // Text body of the message
         messageData.message = "Here is the photo you requested";
         // Optional attachment to send(local absolute or relative paths)
         messageData.addAttachmentPath("../bot.png");
         // Chat id to send the message in
-        messageData.chatId = msg.message.room;
+        var chatId = msg.message.room;
         // If the chat is a group chat or a one-to-one chat
-        messageData.isGroup = control.isUserInGroup(msg.message.user);
+        var isGroup = ChatTools.isUserInGroup(msg.message.user);
         // Optional flag if chat auxiliary
-        messageData.isAux = false;
+        var isAux = false;
+        messageData.setChat(chatId, isGroup, isAux);
 
-        // Send the message and parse result in callback
-        messengerApi.sendMessage(messageData, function(success, json) {
-            console.log("Send photo successful: " + success);
-            if(json != null) {
-                var messageId = json["id"];
-                console.log("Photo message id: " + messageId);
-            } else {
-                msg.send("Was unable to upload photo to chat");
-            }
-        });
+        // Send the message
+        var success = await control.messengerClient.sendMessage(messageData);
+        logger.debug("Send photo successful: " + success);
+        if(!success) {
+            logger.error("Unable to send photo");
+        }
     }),
 
     // Check if the pdf command was heard
-    robot.hear(/pdf/i, function(msg) {
+    robot.hear(RegexTools.getStartCommandRegex("pdf"), (msg) => {
         // Notify user of generating pdf
         msg.send("Generating pdf, one moment please");
 
-        createAndSendPdf(msg, null, null, "Chat.pdf", "Here is the pdf you requested");
+        setTimeout(() => {
+            var flow = new Flow(control, "Stopped creating pdf", "An error occurred while creating pdf")
+            .add(new ChatPdfAction("Chat.pdf"))
+            .start(msg);
+        }, DELAY_PDF_CREATION_MS);
     }),
 
     // Example simple command that does not use the questionnaire
-    robot.hear(/ping/i, function(msg) {
+    robot.hear(RegexTools.getStartCommandRegex("ping"), (msg) => {
         msg.send("PONG!");
     }),
 
-    robot.hear(/group/i, function(msg) {
+    robot.hear(RegexTools.getStartCommandRegex("group"), (msg) => {
+        var userId = ChatTools.getUserId(msg.message.user);
+        logger.debug("Create group command started by user: " + userId);
+
+        var createGroupAction = new CreateGroupAction(new AnswerValue("subject"));
+        createGroupAction.addMemberId(userId);
+        createGroupAction.setPositiveSubFlow(new Flow()
+            .info("Group chat created")
+        );
+        createGroupAction.setNegativeSubFlow(new Flow()
+            .info("Unable to create group chat")
+        );
+
         // Optional check if user has permission to create a group
-        var userId = control.getUserId(msg.message.user);
-        console.log("Create group command started by user: " + userId);
-        messengerApi.isCoworker(userId, robot.user, function(allowed) {
-            if(allowed) {
-                var answers = new Answers();
-                answers.add("userId", userId);
+        var checkUserAction = new CheckUserAction("COWORKER");
+        checkUserAction.setPositiveSubFlow(new Flow()
+            .text("subject", "What should the subject for the group be? (Accepted length 8-200)", "Invalid group chat subject.")
+            .length(8, 200)
+            .polar("autoClose", "Should the chat close automatically after a week of inactivity? (Yes or no)", "Invalid answer")
+            .positive(positiveRegex, new Flow()
+                .add(new Action((flowCallback) => {
+                    // Automatically close the group after 7 days of inactivity (optional)
+                    createGroupAction.setAutoCloseAfter(7);
+                    flowCallback();
+                })))
+            .positiveButton("yes" ,"Yes", "green")
+            .negative(negativeRegex)
+            .negativeButton("no", "No", "red")
+            .summary(getGroupSummary)
+            .polar("confirmed", "Are you sure you want to create the group? (Yes or no)", "Invalid confirmation.")
+            .positive(positiveRegex, new Flow()
+                .info("Creating group chat, one moment please")
+                .add(createGroupAction))
+            .positiveButton("yes" ,"Yes", "green")
+            .negative(negativeRegex, new Flow()
+                .info("Not creating group"))
+            .negativeButton("no", "No", "red"))
+        checkUserAction.setNegativeSubFlow(new Flow()
+            .info("Sorry you have no access to the group command."))
 
-                new Flow(control, "Stopped creating group", "An error occurred while creating group")
-                .restartButton("group", "Restart creating group", "blue")
-                .text("subject", "What should the subject for the group be? (Accepted length 8-200)", "Invalid group chat subject.")
-                .length(8, 200)
-                .polar("autoClose", "Should the chat close automatically after a week of inactivity? (Yes or no)", "Invalid answer")
-                .positive(positiveRegex)
-                .positiveButton("yes" ,"Yes", "green")
-                .negative(negativeRegex)
-                .negativeButton("no", "No", "red")
-                .summary(getGroupSummary)
-                .polar("confirmed", "Are you sure you want to create the group? (Yes or no)", "Invalid confirmation.")
-                .positive(positiveRegex)
-                .positiveButton("yes" ,"Yes", "green")
-                .negative(negativeRegex)
-                .negativeButton("no", "No", "red")
-                .finish(callbackGroupFinished)
-                .start(msg, answers);
-            } else {
-                msg.send("Sorry you have no access to the group command.");
-            }
-        });
+        new Flow(control, "Stopped creating group", "An error occurred while creating group")
+        .restartButton("group", "Restart creating group", "blue")
+        .add(checkUserAction)
+        .start(msg);
     }),
 
-    robot.hear(/invite/i, function(msg) {
+    robot.hear(RegexTools.getStartCommandRegex("invite"), (msg) => {
         // Optional check if user has permission to invite a user
-        var userId = control.getUserId(msg.message.user);
-        console.log("Invite user command started by user: " + userId);
-        messengerApi.isCoworker(userId, robot.user, function(allowed) {
-            if(allowed) {
-                var answers = new Answers();
-                answers.add("userId", userId);
+        var userId = ChatTools.getUserId(msg.message.user);
+        logger.debug("Invite user command started by user: " + userId);
 
-                new Flow(control, "Stopped inviting a user", "An error occurred while inviting user")
-                .restartButton("invite", "Restart inviting a user", "blue")
-                .text("firstName", "What is the first name of the user you want to invite?", "Invalid name.")
-                .text("lastName", "What is the last name?", "Invalid name.")
-                .multiple("inviteType", "Do you want to invite the user as a coworker, contact or private user?", "Invalid choice.")
-                .option(coworkerRegex)
-                .button("coworker", "Coworker", "black")
-                .option(contactRegex)
-                .button("contact", "Contact", "black")
-                .option(privateRegex)
-                .button("private", "Private", "black")
-                .email("email", "To which email address should the invite be sent?", "Invalid email address.")
-                .summary(getInviteSummary)
-                .polar("confirmed", "Are you sure you want to send the invite? (Yes or no)", "Invalid confirmation.")
-                .positive(positiveRegex)
-                .positiveButton("yes" ,"Yes", "green")
-                .negative(negativeRegex)
-                .negativeButton("no", "No", "red")
-                .finish(callbackInviteFinished)
-                .start(msg, answers);
-            } else {
-                msg.send("Sorry you have no access to the invite command.");
-            }
-        });
+        var firstName = new AnswerValue("firstName");
+        var lastName = new AnswerValue("lastName");
+        var inviteType = new AnswerValue("inviteType_value");
+        var inviteText = null;
+        var email = new AnswerValue("email");
+        var createConversation = false; // Do not create a one-to-one chat with this user
+        var auxId = null; // No auxiliary id for user
+
+        var createGroupAction = new CreateGroupAction("Group chat with %first_name% %last_name%");
+        createGroupAction.addSubjectFormatter(new ReplaceAnswerFormatter("%first_name%", "firstName"));
+        createGroupAction.addSubjectFormatter(new ReplaceAnswerFormatter("%last_name%", "lastName"));
+        createGroupAction.addMemberId(userId);
+        createGroupAction.setAutoCloseAfter(7);
+        createGroupAction.addInvite(email, firstName, lastName, inviteType, inviteText, createConversation, auxId)
+        createGroupAction.setPositiveSubFlow(new Flow()
+            .info("Group chat created and user is invited")
+        );
+        createGroupAction.setNegativeSubFlow(new Flow()
+            .info("Unable to invite user and/or create group chat")
+        );
+
+        // Optional check if user has permission to create a group
+        var checkUserAction = new CheckUserAction("COWORKER");
+        checkUserAction.setPositiveSubFlow(new Flow()
+            .text("firstName", "What is the first name of the user you want to invite?", "Invalid name.")
+            .capitalize()   // Capitalize first letter
+            .text("lastName", "What is the last name?", "Invalid name.")
+            .lastName()     // Capitalize as last name
+            .multiple("inviteType", "Do you want to invite the user as a coworker, contact or private user?", "Invalid choice.")
+            .option(coworkerRegex, null, "coworker")
+            .button("coworker", "Coworker", "black")
+            .option(contactRegex, null, "contact")
+            .button("contact", "Contact", "black")
+            .option(privateRegex, null, "private_user")
+            .button("private", "Private", "black")
+            .email("email", "To which email address should the invite be sent?", "Invalid email address.")
+            .summary(getInviteSummary)
+            .polar("confirmed", "Are you sure you want to send the invite? (Yes or no)", "Invalid confirmation.")
+            .positive(positiveRegex, new Flow()
+                .info("Your invite is being sent and corresponding group chat is created, one moment please")
+                .add(createGroupAction))
+            .positiveButton("yes" ,"Yes", "green")
+            .negative(negativeRegex, new Flow()
+                .info("Not inviting user "))
+            .negativeButton("no", "No", "red"))
+        checkUserAction.setNegativeSubFlow(new Flow()
+            .info("Sorry you have no access to the invite command."))
+
+        new Flow(control, "Stopped inviting a user", "An error occurred while inviting user")
+        .restartButton("invite", "Restart inviting a user", "blue")
+        .add(checkUserAction)
+        .start(msg);
     }),
 
-    robot.hear(/agreement/i, function(msg) {
-        if(!control.isUserInGroup(msg.message.user)) {
+    robot.hear(RegexTools.getStartCommandRegex("agreement"), async (msg) => {
+        if(!ChatTools.isUserInGroup(msg.message.user)) {
             msg.send("Making an agreement is only available in group chats");
             return;
         }
         var date = Date.now();
-        var userId = control.getUserId(msg.message.user);
+        var userId = ChatTools.getUserId(msg.message.user);
+        var user = await control.messengerClient.getUser(userId);
+        if(!user) {
+            msg.send("Unable to retrieve user data");
+            return;
+        }
 
-        messengerApi.get("users/" + userId, function(success, json) {
-            if(success) {
-                var includeMentions = [];
-                includeMentions.push(json);
+        var includeMentions = [];
+        includeMentions.push(user);
 
-                var answers = new Answers();
-                answers.add("userId", userId);
-                answers.add("chatId", msg.message.room);
-                answers.add("isGroup", true);
-                answers.add("isAux", false);
-                answers.add("start_date", date);
-                answers.add("user", json);
+        var answers = new Answers();
+        answers.add("userId", userId);
+        answers.add("chatId", msg.message.room);
+        answers.add("isGroup", true);
+        answers.add("isAux", false);
+        answers.add("start_date", date);
+        answers.add("user", user);
 
-                new Flow(control, "Stopped making an agreement", "An error occurred while making an agreement")
-                .restartButton("agreement", "Restart making an agreement", "blue")
-                .mention("mentions", "With who do you want to make the agreement with? (Use '@' to sum up users)", "Invalid mention.")
-                .formatQuestion(formatAgreementWhoQuestion)
-                .includeMentions(includeMentions)
-                .allAllowed(true)
-                .robotAllowed(false)
-                .completeMentions()
-                .text("agreement", "What is the agreement?", "Invalid answer.")
-                .summary(getAgreementSummary)
-                .polar("confirmed", "Do you agree with the agreement? (Accept or Reject)", "Invalid confirmation.")
-                .positive(acceptRegex)
-                .positiveButton("accept" ,"Accept", "green")
-                .negative(rejectRegex)
-                .negativeButton("reject", "Reject", "red")
-                .timeout(600000)
-                .askMentions("mentions")
-                .breakOnValue(false, false)
-                .multiUserSummary(getAgreementUsersSummary)
-                .finish(callbackAgreementFinished)
-                .start(msg, answers);
-            } else {
-                msg.send("An error occurred while making an agreement");
-            }
-        });
+        var chatPdfAction = new ChatPdfAction("Chat.pdf");
+        chatPdfAction.setStartDate(new AnswerValue("start_date"));
+
+        new Flow(control, "Stopped making an agreement", "An error occurred while making an agreement")
+        .restartButton("agreement", "Restart making an agreement", "blue")
+        .mention("mentions", "With who do you want to make the agreement with? (Use '@' to sum up users)", "Invalid mention.")
+        .formatQuestion(formatAgreementWhoQuestion)
+        .includeMentions(includeMentions)
+        .allAllowed(true)
+        .robotAllowed(false)
+        .completeMentions()
+        .text("agreement", "What is the agreement?", "Invalid answer.")
+        .summary(getAgreementSummary)
+        .polar("confirmed", "Do you agree with the agreement? (Accept or Reject)", "Invalid confirmation.")
+        .positive(acceptRegex, new Flow()
+            .info("Agreement was reached, generating pdf")
+            .add(chatPdfAction))
+        .positiveButton("accept" ,"Accept", "green")
+        .negative(rejectRegex, new Flow()
+            .info("Unable to reach an agreement"))
+        .negativeButton("reject", "Reject", "red")
+        .timeout(600000)
+        .askMentions("mentions")
+        .breakOnValue(false, false)
+        .multiUserSummary(getAgreementUsersSummary)
+        .start(msg, answers);
     }),
 
-    robot.hear(/verify/i, function(msg) {
+    robot.hear(RegexTools.getStartCommandRegex("verify"), (msg) => {
         new Flow(control, "Stopped verifying", "An error occurred while verifying")
         .restartButton("verify", "Restart verifying your account", "blue")
         .polar("info", "Seems like you want to verify your account, do you want some information before we start?", "Invalid answer")
@@ -492,7 +499,7 @@ module.exports = function(robot) {
         .positiveButton("yes" ,"Yes", "green")
         .negative(negativeRegex)
         .negativeButton("no", "No", "red")
-        .verification("verification", "idensys", true)
+        .verification("verification", "idin", true)
         .verified(new Flow()
             .info("Great! Your account is now verified!"))
         .unverified(new Flow()
@@ -501,21 +508,21 @@ module.exports = function(robot) {
     })
 };
 
-var callbackAddressFinished = function(response, answers) {
+var callbackAddressFinished = (response, answers) => {
     var summary = "Thank you, your package will be sent to:";
     summary += "\n\nPostal code:\n    " + answers.get("postalCode");
-    summary += "\n\nStreet name::\n    " + Extra.capitalizeLastName(answers.get("street"));
+    summary += "\n\nStreet name::\n    " + StringTools.capitalizeLastName(answers.get("street"));
     summary += "\n\nHouse number:\n    " + answers.get("houseNumber");
     response.send(summary);
 };
 
 // Filling in form flow finished callback
-var callbackFormFinished = function(response, answers) {
+var callbackFormFinished = (response, answers) => {
     var summary = "Thank you, your answers were:";
     summary += "\n\nColors you like:\n    " + answers.get("color");
     summary += "\n\nMood score:\n    " + answers.get("mood");
-    summary += "\n\nFirst name:\n    " + Extra.capitalizeFirstLetter(answers.get("firstName"));
-    summary += "\n\nLast name:\n    " + Extra.capitalizeLastName(answers.get("lastName"));
+    summary += "\n\nFirst name:\n    " + StringTools.capitalizeFirstLetter(answers.get("firstName"));
+    summary += "\n\nLast name:\n    " + StringTools.capitalizeLastName(answers.get("lastName"));
     summary += "\n\nAge:\n    " + answers.get("age");
     if(answers.get("subscribe")) {
         summary += "\n\nEmail address to subscribe:\n    " + answers.get("email");
@@ -534,7 +541,7 @@ var callbackFormFinished = function(response, answers) {
     var mentions = answers.get("mentions");
     if(mentions != null) {
         for(var index in mentions) {
-            summary += "\n    " + Extra.mentionToUserString(mentions[index]);
+            summary += "\n    " + StringTools.mentionToUserString(mentions[index]);
         }
     } else {
         summary += "null";
@@ -544,7 +551,7 @@ var callbackFormFinished = function(response, answers) {
 
 
 // Format an group chat summary of the given answers
-var getGroupSummary = function(answers) {
+var getGroupSummary = (answers) => {
     var summary = "Group chat to create:";
     summary += "\n\nSubject:\n    " + answers.get("subject");
     summary += "\n\nAuto close:\n    ";
@@ -556,46 +563,12 @@ var getGroupSummary = function(answers) {
     return summary;
 };
 
-// Create group flow finished callback
-var callbackGroupFinished = function(response, answers) {
-    if(!answers.get("confirmed")) {
-        response.send("Not creating group " + answers.get("subject"));
-        return;
-    }
-    // Notify user that creating group has started
-    response.send("Creating group chat, one moment please");
-
-    // Create a group data instance
-    var groupData = new Messenger.CreateGroupData();
-
-    // Set the chat subject
-    groupData.subject = answers.get("subject");
-    // Optional members to add
-    groupData.addMemberId(answers.get("userId"));
-    if(answers.get("autoClose")) {
-        // Automatically close the group after 7 days of inactivity (optional)
-        groupData.autoCloseAfter = 7;
-    }
-
-    // Create group and parse result in callback
-    messengerApi.createGroup(groupData, function(success, json) {
-        console.log("Create group successful: " + success);
-        if(json != null) {
-            var groupId = json["id"];
-            console.log("Created group with id: " + groupId);
-            response.send("Group chat created \"" + groupData.subject + "\"");
-        } else {
-            response.send("Unable to create group chat");
-        }
-    });
-};
-
 // Format an invite summary of the given answers
-var getInviteSummary = function(answers) {
+var getInviteSummary = (answers) => {
     var summary = "User to invite:";
     summary += "\n\nName:\n    ";
-    summary += Extra.capitalizeFirstLetter(answers.get("firstName"))
-    summary += " " + Extra.capitalizeLastName(answers.get("lastName"));
+    summary += StringTools.capitalizeFirstLetter(answers.get("firstName"))
+    summary += " " + StringTools.capitalizeLastName(answers.get("lastName"));
     summary += "\n\nInvite as:\n    " + answers.get("inviteType");
     summary += "\n\nSend invite to:\n    ";
     if(answers.get("email") != null) {
@@ -608,122 +581,7 @@ var getInviteSummary = function(answers) {
     return summary;
 };
 
-// Invite user flow finished callback
-var callbackInviteFinished = function(response, answers) {
-    var firstName = Extra.capitalizeFirstLetter(answers.get("firstName"));
-    var lastName = Extra.capitalizeLastName(answers.get("lastName"));
-    if(!answers.get("confirmed")) {
-        response.send("Not inviting user " + firstName + " " + lastName);
-        return;
-    }
-    // Notify user that invite has started
-    response.send("Your invite is being sent and corresponding group chat is created, one moment please");
-
-    // Create a invite user data instance
-    var inviteData = new Messenger.InviteUserData();
-
-    // First name of the user (optional)
-    inviteData.firstName = firstName;
-    // Last name of the user (optional)
-    inviteData.lastName = lastName;
-    // Invite type (coworker, contact, private_user)
-    var inviteType = answers.get("inviteType");
-    if(inviteType.match(coworkerRegex)) {
-        inviteData.inviteType = "coworker";
-    } else if(inviteType.match(contactRegex)) {
-        inviteData.inviteType = "contact";
-    } else {
-        inviteData.inviteType = "private_user";
-    }
-    // Email address to send invite to
-    inviteData.email = answers.get("email");
-    // Create a one-to-one chat with this user
-    inviteData.createConversation = false;
-
-    // Create a group data instance
-    var groupData = new Messenger.CreateGroupData();
-
-    // Set the chat subject
-    groupData.subject = "Group chat with " + firstName + " " + lastName;
-    // Optional members to add
-    groupData.addMemberId(answers.get("userId"));
-    // Invite user in the group
-    groupData.addInvite(inviteData);
-    // Automatically close the group after 7 days of inactivity (optional)
-    groupData.autoCloseAfter = 7;
-
-    // Create group and parse result in callback
-    messengerApi.createGroup(groupData, function(success, json) {
-        console.log("Create group successful: " + success);
-        if(json != null) {
-            var groupId = json["id"];
-            console.log("Created group with id: " + groupId);
-            response.send("Group chat created and user is invited in \"" + groupData.subject + "\"");
-        } else {
-            response.send("Unable to invite user and/or create group chat");
-        }
-    });
-};
-
-var createAndSendPdf = function(response, startDate, endDate, fileName, messageText) {
-    // Delay PDF creation to include latest messages
-    setTimeout(function() {
-        // Create a PDF data instance
-        var pdfData = new Messenger.PdfData();
-
-        // Chat id to generate pdf from
-        pdfData.chatId = response.message.room;
-        // If the chat is a group chat or a one-to-one chat
-        pdfData.isGroup = control.isUserInGroup(response.message.user);
-        // Optional flag if chat auxiliary
-        pdfData.isAux = false;
-        // Starting date of generated pdf (null == last 30 days)
-        pdfData.startDate = startDate;
-        // Ending date of generated pdf (null == latest message)
-        pdfData.endDate = endDate;
-        // Filename of the downloaded pdf
-        pdfData.name = fileName;
-
-        // Retrieve chat pdf download url
-        messengerApi.getChatPdfUrl(pdfData, function(success, json, cookie) {
-            console.log("Retrieve pdf download url successful: " + success);
-            if(json != null) {
-                var url = json["link"];
-
-                // Use url and cookie to download pdf
-                messengerApi.download(url, pdfData.name, "application/pdf", cookie, function(downloaded, path) {
-                    if(downloaded) {
-                        console.log("pdf: Path: " + path);
-                        pdfData.path = path;
-
-                        // Upload the downloaded pdf file to the chat
-                        var messageData = new Messenger.SendMessageData();
-                        messageData.chatId = pdfData.chatId;
-                        messageData.message = messageText;
-                        messageData.addAttachmentPath(pdfData.path);
-                        messageData.isGroup = pdfData.isGroup;
-                        messageData.isAux = pdfData.isAux;
-                        messengerApi.sendMessage(messageData, function(success, json) {
-                            console.log("Send pdf successful: " + success);
-                            if(json != null) {
-                                var messageId = json["id"];
-                                console.log("Pdf message id: " + messageId);
-                            } else {
-                                response.send("Was unable to upload pdf to chat");
-                            }
-                        });
-                    } else {
-                        response.send("Was unable to download pdf file");
-                    }
-                });
-            } else {
-                response.send("Was unable to retrieve pdf file");
-            }
-        });
-    }, DELAY_PDF_CREATION_MS);
-};
-
-var formatAgreementWhoQuestion = function(answers) {
+var formatAgreementWhoQuestion = (answers) => {
     var user = answers.get("user");
     var firstName = user["first_name"];
     if(firstName != null) {
@@ -734,14 +592,14 @@ var formatAgreementWhoQuestion = function(answers) {
 };
 
 // Format an agreement summary of the given answers
-var getAgreementSummary = function(answers) {
+var getAgreementSummary = (answers) => {
     var summary = "Agreement details:";
     summary += "\n\nAgreement:\n    " + answers.get("agreement");
     summary += "\n\nMentioned users:";
     var mentions = answers.get("mentions");
     if(mentions != null) {
         for(var index in mentions) {
-            summary += "\n    " + Extra.mentionToUserString(mentions[index]);
+            summary += "\n    " + StringTools.mentionToUserString(mentions[index]);
         }
     } else {
         summary += "null";
@@ -750,7 +608,7 @@ var getAgreementSummary = function(answers) {
 };
 
 // Format an agreement user answer summary
-var getAgreementUsersSummary = function(answers, currentUserId, breaking) {
+var getAgreementUsersSummary = (answers, currentUserId, breaking) => {
     var summary = "";
     var multiAnswers = answers.get("confirmed");
     var mentions = answers.get("mentions");
@@ -761,9 +619,9 @@ var getAgreementUsersSummary = function(answers, currentUserId, breaking) {
         var userId = mention["id"];
         if(userId === currentUserId) {
             if(multiAnswers.get(currentUserId)) {
-                summary += Extra.mentionToUserString(mention) + " has accepted";
+                summary += StringTools.mentionToUserString(mention) + " has accepted";
             } else {
-                summary += Extra.mentionToUserString(mention) + " has rejected";
+                summary += StringTools.mentionToUserString(mention) + " has rejected";
             }
             break;
         }
@@ -780,7 +638,7 @@ var getAgreementUsersSummary = function(answers, currentUserId, breaking) {
         var mention = mentions[index];
         var userId = mention["id"];
         if(multiAnswers.get(userId) == null) {
-            waitingFor += "\n    " + Extra.mentionToUserString(mention);
+            waitingFor += "\n    " + StringTools.mentionToUserString(mention);
         }
     }
     if(waitingFor.length > 0) {
@@ -788,27 +646,4 @@ var getAgreementUsersSummary = function(answers, currentUserId, breaking) {
     }
 
     return summary;
-};
-
-// Agreement flow finished callback
-var callbackAgreementFinished = function(response, answers) {
-    console.log("Finished:", answers);
-
-    var confirmedAnswers = answers.get("confirmed");
-    var keys = confirmedAnswers.keys();
-    var agreed = keys.length > 0;
-    for(var index in keys) {
-        var key = keys[index];
-        if(!confirmedAnswers.get(key)) {
-            agreed = false;
-            break;
-        }
-    }
-    if(agreed) {
-        response.send("Agreement was reached, generating pdf");
-        var startDate = answers.get("start_date");
-        createAndSendPdf(response, startDate, null, "Agreement.pdf", "Here is the agreement formatted as a pdf file");
-    } else {
-        response.send("Unable to reach an agreement");
-    }
 };
