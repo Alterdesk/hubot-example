@@ -2,10 +2,7 @@
 
 A Hubot example using the following Alterdesk libraries
 * [hubot-alterdesk-adapter](https://github.com/Alterdesk/hubot-alterdesk-adapter) - Real time connection with the messenger
-* [hubot-schedule-api](https://github.com/Alterdesk/hubot-schedule-api) - REST API and scheduling
 * [hubot-questionnaire-framework](https://github.com/Alterdesk/hubot-questionnaire-framework) - Flow of questions and extras
-* [node-messenger-sdk](https://github.com/Alterdesk/node-messenger-sdk) - Perform messenger API calls
-* [node-messenger-extra](https://github.com/Alterdesk/node-messenger-extra) - Library with helper functions and regex
     
 ## Run the Hubot example
 
@@ -28,6 +25,9 @@ export HUBOT_ALTERDESK_TOKEN=<MESSENGER_API_TOKEN>
 Start the Hubot script in a terminal
 ```bash
 cd hubot
+# Run the setup script once
+./bin/setup
+# Run the bot
 ./bin/hubot
 ```
 
@@ -49,6 +49,9 @@ SET HUBOT_ALTERDESK_TOKEN=<MESSENGER_API_TOKEN>
 Start the Hubot script in command prompt
 ```bat
 cd hubot
+REM Run the setup script once
+.\bin\setup.cmd
+REM Run the bot
 .\bin\hubot.cmd
 ```
 
