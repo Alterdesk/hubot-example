@@ -183,7 +183,7 @@ module.exports = (robot) => {
     });
 
     control.botApi.setOverrideCallback("askHasTime", (chatId, isGroup, userId, answers) => {
-        var response = control.createHubotResponse(userId, chatId, isGroup);
+        var response = ChatTools.createHubotResponse(control.robot, userId, chatId, isGroup);
 
         new Flow(control, "Stopped asking", "Error while asking")
         .polar("hasTime", "Do you have time to fill in a form?", "Invalid answer.")
