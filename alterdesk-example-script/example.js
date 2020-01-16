@@ -196,7 +196,7 @@ module.exports = (robot) => {
         .positiveButton("yes", "Yes", "green")
         .negative(negativeRegex, new Flow()
             .info("That's too bad, I will ask you again tomorrow")
-            .action((response, answers, flowCallback) => {
+            .action((flowCallback) => {
                 control.botApi.scheduleEventInMs(chatId, isGroup, userId, "askHasTime", 30000);
                 flowCallback();
             }))
