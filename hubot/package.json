@@ -7,8 +7,8 @@
   "dependencies": {
     "alterdesk-example-script": "file:../alterdesk-example-script",
     "hubot": "^3.3.2",
-    "hubot-alterdesk": "https://github.com/Alterdesk/hubot-alterdesk-adapter.git",
-    "hubot-questionnaire-framework": "https://github.com/Alterdesk/hubot-questionnaire-framework.git"
+    "hubot-alterdesk": "^1.0.1",
+    "hubot-questionnaire-framework": "^1.0.1"
   },
   "engines": {
     "node": "0.10.x"
